@@ -222,9 +222,9 @@ export class EnemyManager {
     this.eventBus = EventBus.getInstance();
 
     // Listen for player gunfire raycast hits
-    this.eventBus.on('npc:hit', ({ npc, point }) => {
+    this.eventBus.on('npc:hit', ({ npc, point, damage }) => {
       if ((npc as any).isEnemy) {
-        (npc as any).enemyEntity.takeDamage(35);
+        (npc as any).enemyEntity.takeDamage(damage || 35);
       }
     });
   }
@@ -233,6 +233,23 @@ export class EnemyManager {
     const e1 = new Enemy(this.scene, pos1, this.audio);
     const e2 = new Enemy(this.scene, pos2, this.audio);
     this.enemies.push(e1, e2);
+  }
+
+  public spawnEnemies(positions: THREE.Vector3[]): Enemy[] {
+    const spawned: Enemy[] = [];
+    positions.forEach(pos => {
+      const e = new Enemy(this.scene, pos, this.audio);
+      this.enemies.push(e);
+      spawned.push(e);
+    });
+    return spawned;
+  }
+
+  public clear(): void {
+    this.enemies.forEach(e => {
+      this.scene.remove(e.mesh);
+    });
+    this.enemies = [];
   }
 
   public update(deltaTime: number, player: Player): void {

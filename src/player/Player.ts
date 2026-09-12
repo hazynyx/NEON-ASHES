@@ -4,13 +4,15 @@ import { ThirdPersonCamera } from '../rendering/Camera.ts';
 import { AudioManager } from '../audio/AudioManager.ts';
 import { EventBus } from '../core/EventBus.ts';
 
+export type WeaponType = 'pistol' | 'shotgun' | 'unarmed';
+
 export class Player {
   public mesh: THREE.Group;
-  public position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
-  public velocity: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  public position: THREE.Vector3 = new THREE.Vector3();
+  public velocity: THREE.Vector3 = new THREE.Vector3();
   public heading: number = 0; // rotation around Y axis
 
-  // Limbs for procedural animation
+  // Visual Meshes
   private torsoMesh!: THREE.Mesh;
   private headMesh!: THREE.Mesh;
   private leftArm!: THREE.Group;
@@ -19,6 +21,8 @@ export class Player {
   private rightLeg!: THREE.Group;
   private pistolMesh!: THREE.Group;
   private muzzleFlashLight!: THREE.PointLight;
+  private shotgunMesh!: THREE.Group;
+  private shotgunMuzzleFlash!: THREE.PointLight;
 
   // Animation timers
   private walkCycleTime: number = 0;
@@ -34,13 +38,41 @@ export class Player {
   public cash: number = 240;
 
   // Weapon & Combat
+  public currentWeapon: WeaponType = 'pistol';
   public hasPistol: boolean = true;
+  public hasShotgun: boolean = true;
+
+  // Pistol ammo
   public ammoClip: number = 12;
   public maxClip: number = 12;
   public ammoReserve: number = 48;
+
+  // Shotgun ammo
+  public shotgunClip: number = 6;
+  public maxShotgunClip: number = 6;
+  public shotgunReserve: number = 24;
+
   public isReloading: boolean = false;
   private reloadTimer: number = 0;
   private shootCooldown: number = 0;
+
+  public get currentWeaponName(): string {
+    if (this.currentWeapon === 'pistol') return 'SERVICE PISTOL';
+    if (this.currentWeapon === 'shotgun') return '12G TACTICAL SHOTGUN';
+    return 'UNARMED';
+  }
+
+  public get activeClip(): number {
+    if (this.currentWeapon === 'pistol') return this.ammoClip;
+    if (this.currentWeapon === 'shotgun') return this.shotgunClip;
+    return 0;
+  }
+
+  public get activeReserve(): number {
+    if (this.currentWeapon === 'pistol') return this.ammoReserve;
+    if (this.currentWeapon === 'shotgun') return this.shotgunReserve;
+    return 0;
+  }
 
   // Physics tuning
   private walkSpeed: number = 3.8;
@@ -135,6 +167,37 @@ export class Player {
     this.pistolMesh.add(this.muzzleFlashLight);
 
     this.rightArm.add(this.pistolMesh);
+
+    // 12G Tactical Shotgun attached to right hand
+    this.shotgunMesh = new THREE.Group();
+    this.shotgunMesh.position.set(0, -0.55, 0.25);
+
+    const shotgunMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.85, roughness: 0.25 });
+    const stockMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+
+    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.1, 0.68), shotgunMat);
+    barrel.position.set(0, 0, 0.1);
+    this.shotgunMesh.add(barrel);
+
+    const magTube = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.62), shotgunMat);
+    magTube.position.set(0, -0.07, 0.12);
+    this.shotgunMesh.add(magTube);
+
+    const forend = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.11, 0.22), stockMat);
+    forend.position.set(0, -0.06, 0.18);
+    this.shotgunMesh.add(forend);
+
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, 0.12), stockMat);
+    grip.position.set(0, -0.14, -0.16);
+    this.shotgunMesh.add(grip);
+
+    this.shotgunMuzzleFlash = new THREE.PointLight(0xff7700, 0, 12);
+    this.shotgunMuzzleFlash.position.set(0, 0, 0.48);
+    this.shotgunMesh.add(this.shotgunMuzzleFlash);
+
+    this.shotgunMesh.visible = false;
+    this.rightArm.add(this.shotgunMesh);
+
     this.mesh.add(this.rightArm);
 
     // 4. Legs
@@ -182,8 +245,29 @@ export class Player {
     }
     this.mesh.visible = true;
 
+    // 0. Weapon selection (Keys 1, 2, 3)
+    if (input.isKeyPressed('Digit1')) {
+      if (this.currentWeapon !== 'pistol') {
+        this.currentWeapon = 'pistol';
+        this.isReloading = false;
+        this.audio.playReload();
+      }
+    } else if (input.isKeyPressed('Digit2') && this.hasShotgun) {
+      if (this.currentWeapon !== 'shotgun') {
+        this.currentWeapon = 'shotgun';
+        this.isReloading = false;
+        this.audio.playReload();
+      }
+    } else if (input.isKeyPressed('Digit3')) {
+      if (this.currentWeapon !== 'unarmed') {
+        this.currentWeapon = 'unarmed';
+        this.isReloading = false;
+        this.audio.playUIClick();
+      }
+    }
+
     // 1. Check Aiming (Right Mouse Button)
-    this.isAiming = input.isMouseButtonDown(2) && this.hasPistol;
+    this.isAiming = input.isMouseButtonDown(2) && this.currentWeapon !== 'unarmed';
     camera.isAiming = this.isAiming;
 
     // 2. Check Crouch (C key)
@@ -364,18 +448,19 @@ export class Player {
       this.footstepTimer = 0;
     }
 
-    // Aiming Pose: Right arm raised pointing forward with pistol
+    // Aiming Pose: Right arm raised pointing forward with weapon
     if (this.isAiming) {
       this.rightArm.rotation.x = -Math.PI / 2;
       this.rightArm.rotation.y = -0.15;
       this.leftArm.rotation.x = -Math.PI / 2.3;
       this.leftArm.rotation.y = 0.35; // Two-handed grip
-      this.pistolMesh.visible = true;
     } else {
       this.rightArm.rotation.y = 0;
       this.leftArm.rotation.y = 0;
-      this.pistolMesh.visible = this.hasPistol;
     }
+
+    this.pistolMesh.visible = (this.currentWeapon === 'pistol');
+    this.shotgunMesh.visible = (this.currentWeapon === 'shotgun');
   }
 
   private handleCombat(deltaTime: number, input: InputManager, camera: ThirdPersonCamera, scene: THREE.Scene): void {
@@ -383,54 +468,95 @@ export class Player {
       this.shootCooldown -= deltaTime;
     }
 
-    // Turn off muzzle flash
+    // Turn off muzzle flashes
     if (this.muzzleFlashLight.intensity > 0) {
       this.muzzleFlashLight.intensity -= deltaTime * 35;
       if (this.muzzleFlashLight.intensity < 0) this.muzzleFlashLight.intensity = 0;
     }
+    if (this.shotgunMuzzleFlash.intensity > 0) {
+      this.shotgunMuzzleFlash.intensity -= deltaTime * 30;
+      if (this.shotgunMuzzleFlash.intensity < 0) this.shotgunMuzzleFlash.intensity = 0;
+    }
 
     // Reload (R key)
-    if (input.isKeyPressed('KeyR') && this.ammoClip < this.maxClip && this.ammoReserve > 0 && !this.isReloading) {
-      this.isReloading = true;
-      this.reloadTimer = 1.2; // 1.2s reload
-      this.audio.playReload();
+    if (input.isKeyPressed('KeyR') && !this.isReloading && this.currentWeapon !== 'unarmed') {
+      if (this.currentWeapon === 'pistol' && this.ammoClip < this.maxClip && this.ammoReserve > 0) {
+        this.isReloading = true;
+        this.reloadTimer = 1.2;
+        this.audio.playReload();
+      } else if (this.currentWeapon === 'shotgun' && this.shotgunClip < this.maxShotgunClip && this.shotgunReserve > 0) {
+        this.isReloading = true;
+        this.reloadTimer = 1.6;
+        this.audio.playReload();
+      }
     }
 
     if (this.isReloading) {
       this.reloadTimer -= deltaTime;
       if (this.reloadTimer <= 0) {
-        const needed = this.maxClip - this.ammoClip;
-        const take = Math.min(needed, this.ammoReserve);
-        this.ammoClip += take;
-        this.ammoReserve -= take;
+        if (this.currentWeapon === 'pistol') {
+          const needed = this.maxClip - this.ammoClip;
+          const take = Math.min(needed, this.ammoReserve);
+          this.ammoClip += take;
+          this.ammoReserve -= take;
+        } else if (this.currentWeapon === 'shotgun') {
+          const needed = this.maxShotgunClip - this.shotgunClip;
+          const take = Math.min(needed, this.shotgunReserve);
+          this.shotgunClip += take;
+          this.shotgunReserve -= take;
+        }
         this.isReloading = false;
       }
     }
 
     // Shoot (Left Click)
-    if (input.isMouseButtonPressed(0) && this.shootCooldown <= 0 && !this.isReloading) {
-      if (this.ammoClip > 0) {
-        this.ammoClip--;
-        this.shootCooldown = 0.22; // Semi-auto fire rate
-        this.muzzleFlashLight.intensity = 4.0;
-        this.audio.playGunshot();
+    if (input.isMouseButtonPressed(0) && this.shootCooldown <= 0 && !this.isReloading && this.currentWeapon !== 'unarmed') {
+      if (this.currentWeapon === 'pistol') {
+        if (this.ammoClip > 0) {
+          this.ammoClip--;
+          this.shootCooldown = 0.22; // Semi-auto fire rate
+          this.muzzleFlashLight.intensity = 4.0;
+          this.audio.playGunshot();
 
-        // Screen reticle / raycast shoot forward
-        this.performRaycastShot(camera, scene);
-        this.eventBus.emit('player:weaponFire', { weapon: 'pistol' });
-      } else if (this.ammoReserve > 0) {
-        // Auto reload on empty click
-        this.isReloading = true;
-        this.reloadTimer = 1.2;
-        this.audio.playReload();
+          this.performRaycastShot(camera, scene, 0, 0, 35);
+          this.eventBus.emit('player:weaponFire', { weapon: 'pistol' });
+        } else if (this.ammoReserve > 0) {
+          this.isReloading = true;
+          this.reloadTimer = 1.2;
+          this.audio.playReload();
+        }
+      } else if (this.currentWeapon === 'shotgun') {
+        if (this.shotgunClip > 0) {
+          this.shotgunClip--;
+          this.shootCooldown = 0.85; // Pump action delay
+          this.shotgunMuzzleFlash.intensity = 6.0;
+          this.audio.playShotgunFire();
+
+          // 6 spread pellets with angular deviation
+          for (let i = 0; i < 6; i++) {
+            const spreadX = (Math.random() - 0.5) * 0.08;
+            const spreadY = (Math.random() - 0.5) * 0.08;
+            this.performRaycastShot(camera, scene, spreadX, spreadY, 25);
+          }
+          this.eventBus.emit('player:weaponFire', { weapon: 'shotgun' });
+        } else if (this.shotgunReserve > 0) {
+          this.isReloading = true;
+          this.reloadTimer = 1.6;
+          this.audio.playReload();
+        }
       }
     }
   }
 
-  private performRaycastShot(camera: ThirdPersonCamera, scene: THREE.Scene): void {
+  private performRaycastShot(
+    camera: ThirdPersonCamera,
+    scene: THREE.Scene,
+    spreadX: number = 0,
+    spreadY: number = 0,
+    damage: number = 35
+  ): void {
     const raycaster = new THREE.Raycaster();
-    // Shoot straight through center of screen
-    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera.camera);
+    raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), camera.camera);
 
     const intersects = raycaster.intersectObjects(scene.children, true);
     for (const hit of intersects) {
@@ -453,10 +579,10 @@ export class Player {
         targetObj = targetObj.parent;
       }
       if (targetObj && targetObj.isNPC) {
-        this.eventBus.emit('npc:hit', { npc: targetObj.npcEntity, point: hit.point });
+        this.eventBus.emit('npc:hit', { npc: targetObj.npcEntity, point: hit.point, damage });
       } else if (targetObj && targetObj.isEnemy) {
-        targetObj.enemyEntity.takeDamage(35);
-        this.eventBus.emit('enemy:hit', { enemy: targetObj.enemyEntity, point: hit.point });
+        targetObj.enemyEntity.takeDamage(damage);
+        this.eventBus.emit('enemy:hit', { enemy: targetObj.enemyEntity, point: hit.point, damage });
       }
       break;
     }

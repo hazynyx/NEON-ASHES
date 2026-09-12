@@ -84,6 +84,69 @@ export class AudioManager {
     osc.stop(now + 0.15);
   }
 
+  // --- Shotgun Blast & Pump SFX ---
+  public playShotgunFire(): void {
+    if (!this.ensureContext() || this.isMuted) return;
+    const ctx = this.ctx!;
+    const now = ctx.currentTime;
+
+    // 1. Heavy noise explosive burst
+    const bufferSize = ctx.sampleRate * 0.28;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.05));
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2200, now);
+    filter.frequency.exponentialRampToValueAtTime(250, now + 0.25);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.95, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain!);
+
+    // 2. Sub-bass concussive punch
+    const sub = ctx.createOscillator();
+    sub.type = 'sawtooth';
+    sub.frequency.setValueAtTime(110, now);
+    sub.frequency.exponentialRampToValueAtTime(28, now + 0.22);
+
+    const subGain = ctx.createGain();
+    subGain.gain.setValueAtTime(0.85, now);
+    subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+
+    sub.connect(subGain);
+    subGain.connect(this.masterGain!);
+
+    noise.start(now);
+    sub.start(now);
+    sub.stop(now + 0.25);
+
+    // 3. Pump action racking sound (0.35s after shot)
+    const pumpTime = now + 0.32;
+    [0, 0.12].forEach((offset, idx) => {
+      const osc = ctx.createOscillator();
+      const pGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(idx === 0 ? 1100 : 750, pumpTime + offset);
+      pGain.gain.setValueAtTime(0.35, pumpTime + offset);
+      pGain.gain.exponentialRampToValueAtTime(0.001, pumpTime + offset + 0.06);
+
+      osc.connect(pGain);
+      pGain.connect(this.masterGain!);
+      osc.start(pumpTime + offset);
+      osc.stop(pumpTime + offset + 0.06);
+    });
+  }
+
   // --- Weapon Reload Click ---
   public playReload(): void {
     if (!this.ensureContext() || this.isMuted) return;

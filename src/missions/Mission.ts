@@ -7,6 +7,7 @@ export enum ObjectiveType {
   ENTER = 'ENTER',
   INVESTIGATE = 'INVESTIGATE',
   COLLECT = 'COLLECT',
+  ELIMINATE = 'ELIMINATE',
   ESCAPE = 'ESCAPE'
 }
 

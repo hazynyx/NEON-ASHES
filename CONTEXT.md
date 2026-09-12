@@ -11,23 +11,25 @@
 ---
 
 ## 2. CURRENT DEVELOPMENT STATUS
-- **Overall Completion:** 25% (Phase 0 Foundation, Phase 1 Prototype, and Vertical Slice Missions M01, M02, M03 Complete)
-- **Current Milestone:** Phase 2: Vertical Slice (M01, M02, M03 Complete, starting M04 "Cold Storage")
-- **Current Focus:** Mission M04 ("Cold Storage") implementation: infiltrating Pier 19 Warehouse 19 using the recovered storage key, cracking the internal security lock, searching freight manifests and cold storage lockers for encrypted data drives linking Meridian Properties to Lena's disappearance, and neutralizing armed warehouse guards.
+- **Overall Completion:** 33% (Phase 0 Foundation, Phase 1 Prototype, and all 4 Act I Vertical Slice Missions M01, M02, M03, M04 Complete!)
+- **Current Milestone:** Phase 3 / Act II: The Money Trail (Starting Mission M05 "The Journalist" & Police Pursuit AI)
+- **Current Focus:** Mission M05 ("The Journalist") implementation: meeting investigative journalist Mara Vale at the Southside diner, piecing together Lena's notes, infiltrating the Meridian Properties redevelopment office, photographing corporate zoning records, and evading police surveillance.
 - **Last Completed:**
-  - Mission M03 ("The Harbor") implemented and verified start-to-finish in browser.
-  - Old Harbor Pier 19 waterfront environment (`World.ts`): concrete wharf, water surface, Warehouse 19 exterior with neon cyan signage, yellow gantry crane, and stacked cargo containers.
-  - Objective sequence in `src/missions/data/M03_TheHarbor.ts`: driving to Pier 19, container stack vantage point stakeout, courier pursuit, disabling target vehicle, recovering warehouse storage key, and escaping the harbor.
+  - Mission M04 ("Cold Storage") implemented and verified start-to-finish in browser.
+  - Tactical 12G Shotgun weapon class: procedural sub-bass and pump-action audio synthesis (`AudioManager.ts`), 6-pellet spread raycasting with damage calculation, weapon switching keys (`1`: Pistol, `2`: Shotgun, `3`: Unarmed), and dynamic HUD weapon/ammo display.
+  - Pier 19 Warehouse 19 interior (`World.ts`): hollow walk-in warehouse, animated roll-up security shutter, office manifest desk and terminal screen, Cold Storage Locker 4B, refrigeration storage racks, and tactical cover.
+  - Evidence Modal extension: authentic Meridian Logistics Bill of Lading document linking Councilman Vance Albright directly to the Marrow Syndicate.
+  - Syndicate heavy guards ambush firefight (`EnemyAI.ts`), guard elimination, and harbor perimeter vehicle getaway.
 - **Currently Broken:** None. All systems tested and verified in browser.
 - **Next Tasks:**
-  1. Implement Mission M04 ("Cold Storage"):
-     - Pier 19 Warehouse 19 interior environment with freight pallets, cold storage racks, and security terminal.
-     - Storage keycard door interaction.
-     - Document / encrypted drive search puzzle.
-     - Armed warehouse guards shootout (`EnemyAI.ts`).
-     - Escape Pier 19 with evidence.
-  2. Implement Shotgun weapon class (`Player.ts` weapon switching with keys `1`, `2`, `3`).
-  3. Expand Police Pursuit AI (`PoliceAI.ts`) responding to gunfire and vehicle crimes.
+  1. Implement Mission M05 ("The Journalist"):
+     - Southside Diner location and Mara Vale story NPC.
+     - Dialogue tree sharing Lena's findings and the encrypted drive.
+     - Travel to Meridian Properties office in Central Vesper.
+     - Photograph suspicious property acquisition records.
+  2. Implement Police Pursuit AI (`src/police/PoliceAI.ts`):
+     - Police cruisers actively pursuing Kaleb upon reaching 2+ wanted stars.
+     - Line-of-sight radar evade mechanic.
 
 ---
 
@@ -37,19 +39,21 @@
 | :--- | :--- | :--- |
 | Project Foundation & Build System | [COMPLETE] | Vite 6 + TypeScript + Three.js 0.170 |
 | Game Loop & State Machine | [COMPLETE] | Fixed 60Hz physics accumulator + variable rendering |
-| Input Management | [COMPLETE] | Keyboard (WASD/Shift/Space/C/E/F/R), Mouse look, Pointer Lock API |
+| Input Management | [COMPLETE] | Keyboard (WASD/Shift/Space/C/E/F/R/1/2/3), Mouse look, Pointer Lock API |
 | 3D Rendering & Camera | [COMPLETE] | Three.js WebGL renderer, ACES tone mapping, spring 3rd-person & chase camera |
 | Player Movement & Physics | [COMPLETE] | Walk, jog, sprint with stamina drain, jump, crouch, collision sliding |
 | Vehicle Controller & Physics | [COMPLETE] | Vesper Sedan with steering, braking, speed readout in MPH, enter/exit [E] |
-| World & City District (Eastline & Harbor) | [COMPLETE] | Multi-lane avenues, lit window facades, Pier 19 docks, colliders, POIs |
+| World & City District (Eastline & Harbor) | [COMPLETE] | Multi-lane avenues, lit window facades, Pier 19 docks, Warehouse 19, POIs |
 | NPC & Traffic AI | [COMPLETE] | Mrs. Gable, Jonah Reyes + reactive pedestrians fleeing gunfire |
 | Combat & Enemy AI | [COMPLETE] | Marrow Syndicate enforcers, line-of-sight shooting, hit detection, flinch, death |
+| Weapons & Arsenal | [COMPLETE] | Service Pistol (12/clip) + 12G Tactical Shotgun (6/tube, spread pellets), hotkeys |
 | Police & Wanted System | [PARTIAL] | UI stars active upon crimes; patrol cruiser vehicle spawned |
 | Mission Engine & Objectives | [COMPLETE] | Data-driven framework with distance tracking and auto-triggers |
 | Mission M01 — Home Again | [COMPLETE] | Playable start-to-finish with dialogue, evidence inspection, and reward |
 | Mission M02 — Old Debts | [COMPLETE] | Playable start-to-finish: Jonah dialogue, safe cracking, syndicate shootout, escape |
 | Mission M03 — The Harbor | [COMPLETE] | Playable start-to-finish: Pier 19, surveillance stakeout, courier pursuit, key retrieval |
-| Mission M04 — Cold Storage | [NOT STARTED] | Next target per canonical storyline |
+| Mission M04 — Cold Storage | [COMPLETE] | Playable start-to-finish: Warehouse 19 interior, manifest inspection, drive pickup, ambush, escape |
+| Mission M05 — The Journalist | [NOT STARTED] | Next target per Act II storyline |
 | UI & HUD (No Glassmorphism) | [COMPLETE] | Solid dark surfaces (`#0B0D0F`, `#15181B`, `#E58E26`), minimap, speedo, modals |
 | Audio & Sound Synthesizer | [COMPLETE] | Web Audio API procedural synthesis with zero missing asset latency |
 | Persistence & Save/Load | [COMPLETE] | LocalStorage/IndexedDB state persistence with auto-save toast |
@@ -81,14 +85,22 @@
   - Recover Pier 19 Cold Storage Key [COMPLETE]
   - Escape harbor area with key [COMPLETE]
   - Complete mission & receive $1000 + Pier 19 Key [COMPLETE]
-- **M04 — Cold Storage:** [NOT STARTED] — Next target.
-  - Return to Pier 19 Warehouse 19 with keycard [NOT STARTED]
-  - Unlock high-security roll-up gate [NOT STARTED]
-  - Search interior refrigerated shipping crates [NOT STARTED]
-  - Recover encrypted Marrow/Meridian shipment manifest [NOT STARTED]
-  - Eliminate arriving Syndicate heavy guards [NOT STARTED]
-  - Escape Pier 19 perimeter [NOT STARTED]
-- **M05–M30:** [NOT STARTED]
+- **M04 — Cold Storage:** [COMPLETE]
+  - Return to Pier 19 Warehouse 19 with keycard [COMPLETE]
+  - Unlock high-security roll-up gate [COMPLETE]
+  - Search office terminal & inspect Meridian manifest [COMPLETE]
+  - Recover encrypted military data drive from Locker 4B [COMPLETE]
+  - Eliminate arriving Syndicate heavy guards [COMPLETE]
+  - Escape Pier 19 perimeter with evidence [COMPLETE]
+  - Complete mission & receive $1500 + Military Drive + Shotgun ammo [COMPLETE]
+- **M05 — The Journalist:** [NOT STARTED] — Next target.
+  - Travel to Southside Diner [NOT STARTED]
+  - Meet investigative reporter Mara Vale [NOT STARTED]
+  - Decrypt drive contents and examine Lena's notes [NOT STARTED]
+  - Infiltrate Meridian Properties property development office [NOT STARTED]
+  - Photograph suspicious acquisition files [NOT STARTED]
+  - Evade city security patrol [NOT STARTED]
+- **M06–M30:** [NOT STARTED]
 
 ---
 
@@ -127,27 +139,31 @@
 ---
 
 ## 7. RECENT CHANGES & CHANGE LOG
-### 2026-09-12 (Session 3)
-- Created Old Harbor Pier 19 waterfront in `src/world/World.ts`: deep water surface, concrete wharf platform, Pier 19 Warehouse 19 with cyan signage, 32m yellow gantry crane, and multi-colored stacked shipping containers.
-- Created `src/missions/data/M03_TheHarbor.ts` defining canonical data-driven mission objectives for Mission M03.
-- Integrated M03 into `src/core/Game.ts`:
-  - Pier 19 GPS waypoint tracking and container stack vantage point navigation.
-  - Binocular stakeout prompt and dialogue with Kaleb identifying the man in the trench coat from Lena's photograph.
-  - High-speed courier pursuit sequence and vehicle interception mechanic.
-  - Physical recovery of the Pier 19 Cold Storage Key from the disabled vehicle.
-  - Harbor perimeter vehicle escape trigger and mission completion rewarding $1000 cash and inventory storage key.
-- Verified Mission M03 end-to-end via automated browser test with recorded screenshots and WebP gameplay recording.
-- Production bundle verification (`npm run build`) passing cleanly with zero errors.
+### 2026-09-12 (Session 4)
+- Implemented Tactical 12G Shotgun weapon class with procedural sub-bass / explosive blast / mechanical pump racking audio in `src/audio/AudioManager.ts` (`playShotgunFire`).
+- Implemented multi-pellet spread raycast firearm kinematics in `src/player/Player.ts` (6 spread pellets per pump, variable angular deviation, 25 damage per pellet).
+- Implemented instant weapon switching in `Player.ts` via keys `1` (Service Pistol), `2` (12G Tactical Shotgun), and `3` (Unarmed/Holster).
+- Updated `src/ui/HUD.ts` to dynamically render active weapon names and clip/reserve ammunition counts.
+- Created Pier 19 Warehouse 19 interior in `src/world/World.ts`: walk-in hollow interior, cold blue industrial lighting, refrigeration storage racks, office terminal desk, Cold Storage Locker 4B with emerald electronic keypad glow, and interactive animated roll-up shutter door.
+- Created `src/missions/data/M04_ColdStorage.ts` defining data-driven objectives for Mission M04.
+- Extended Evidence Modal in `src/ui/HUD.ts` to dynamically render the authentic Meridian Logistics Bill of Lading with Councilman Vance Albright's authorization signature and Marrow Syndicate consignee details.
+- Extended `src/ai/EnemyAI.ts` (`EnemyManager.spawnEnemies`) for dynamic wave combat and variable bullet damage.
+- Integrated M04 into `src/core/Game.ts`: roll-up gate interaction with keycard, office manifest inspection, encrypted military drive extraction, Syndicate 3-guard ambush firefight, and perimeter vehicle getaway.
+- Fully verified Mission M04 and Shotgun combat system in automated browser subagent test with recorded screenshots and gameplay recording.
+- Production build verified with zero errors (`npm run build`).
 
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
-- **Missions M01 ("Home Again"), M02 ("Old Debts"), and M03 ("The Harbor")** are fully playable, tested, and verified.
-- Kaleb possesses the **Pier 19 Cold Storage Key** in his inventory.
-- The next development chunk is **Mission M04 ("Cold Storage")** per `MISSION_DESIGN.md` & `STORY_BIBLE.md`:
-  - Return to Pier 19 Warehouse 19.
-  - Use the keycard to unlock the refrigerated warehouse roll-up gate.
-  - Search interior crates for the encrypted Meridian/Marrow shipment manifest.
-  - Eliminate arriving Syndicate heavy guards.
-  - Escape Pier 19 perimeter.
-- Weapon system expansion: implement Shotgun weapon class and weapon switching (`1`: Unarmed/Pistol, `2`: Shotgun).
+- **Act I is 100% complete!** All 4 vertical slice missions (M01 "Home Again", M02 "Old Debts", M03 "The Harbor", and M04 "Cold Storage") are fully implemented, verified, and chained.
+- Kaleb possesses:
+  - **Service Pistol** (12-round clip)
+  - **12G Tactical Shotgun** (6-round tube)
+  - **Cold Storage Keycard**
+  - **Encrypted Military Data Drive** linking Meridian Properties, Councilman Vance Albright, and the Marrow Syndicate to Lena's investigation.
+- Next development chunk is **Act II — The Money Trail (Starting Mission M05 "The Journalist")**:
+  - Meeting investigative journalist **Mara Vale** at Southside Diner.
+  - Exchanging intelligence on Lena's disappearance and decrypting the drive.
+  - Infiltrating the Meridian Properties corporate office in Central Vesper.
+  - Photographing property acquisition documents.
+- Police Pursuit AI (`src/police/PoliceAI.ts`) and Cruiser response mechanics.

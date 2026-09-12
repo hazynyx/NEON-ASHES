@@ -20,6 +20,14 @@ export class World {
   public lenaApartmentPos: THREE.Vector3 = new THREE.Vector3(30, 0, -45);
   public adrianGaragePos: THREE.Vector3 = new THREE.Vector3(-60, 0, 50);
   public pier19Pos: THREE.Vector3 = new THREE.Vector3(65, 0, -180);
+  public warehouseEntrancePos: THREE.Vector3 = new THREE.Vector3(85, 0, -156);
+  public warehouseDeskPos: THREE.Vector3 = new THREE.Vector3(92, 0, -178);
+  public warehouseLockerPos: THREE.Vector3 = new THREE.Vector3(78, 0, -180);
+
+  // Warehouse 19 Shutter & Interior
+  public warehouseShutterMesh!: THREE.Mesh;
+  public warehouseShutterCollider!: THREE.Box3;
+  public isWarehouseShutterOpen: boolean = false;
 
   // Streetlights
   private streetlightPoints: THREE.PointLight[] = [];
@@ -394,29 +402,152 @@ export class World {
     // Dock road for minimap
     this.roads.push({ x1: 50, z1: -120, x2: dockPos.x, z2: dockPos.z, width: 12 });
 
-    // 3. Pier 19 Cold Storage Warehouse
-    const whGeo = new THREE.BoxGeometry(32, 14, 28);
-    const whMat = new THREE.MeshStandardMaterial({
+    // 3. Pier 19 Cold Storage Warehouse (Hollow Structure with Accessible Interior)
+    const whWallMat = new THREE.MeshStandardMaterial({
       color: 0x222a36,
       roughness: 0.75,
       metalness: 0.3
     });
-    const warehouse = new THREE.Mesh(whGeo, whMat);
-    warehouse.position.set(dockPos.x + 20, 7, dockPos.z + 10);
-    warehouse.castShadow = true;
-    warehouse.receiveShadow = true;
-    this.scene.add(warehouse);
+    const whRoofMat = new THREE.MeshStandardMaterial({
+      color: 0x161b22,
+      roughness: 0.85,
+      metalness: 0.2
+    });
 
-    const whBox = new THREE.Box3().setFromObject(warehouse);
-    this.colliders.push(whBox);
+    // 3a. Warehouse Walls & Roof
+    // Back Wall (Z = -184)
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(32, 14, 1.2), whWallMat);
+    backWall.position.set(dockPos.x + 20, 7, dockPos.z - 4);
+    backWall.castShadow = true;
+    backWall.receiveShadow = true;
+    this.scene.add(backWall);
+    this.colliders.push(new THREE.Box3().setFromObject(backWall));
+
+    // Left Wall (X = 69)
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1.2, 14, 28), whWallMat);
+    leftWall.position.set(dockPos.x + 4, 7, dockPos.z + 10);
+    leftWall.castShadow = true;
+    leftWall.receiveShadow = true;
+    this.scene.add(leftWall);
+    this.colliders.push(new THREE.Box3().setFromObject(leftWall));
+
+    // Right Wall (X = 101)
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1.2, 14, 28), whWallMat);
+    rightWall.position.set(dockPos.x + 36, 7, dockPos.z + 10);
+    rightWall.castShadow = true;
+    rightWall.receiveShadow = true;
+    this.scene.add(rightWall);
+    this.colliders.push(new THREE.Box3().setFromObject(rightWall));
+
+    // Roof
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(33, 1, 29), whRoofMat);
+    roof.position.set(dockPos.x + 20, 14.5, dockPos.z + 10);
+    this.scene.add(roof);
+
+    // Front Wall Left Segment
+    const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(11.5, 14, 1.2), whWallMat);
+    frontWallLeft.position.set(dockPos.x + 9.75, 7, dockPos.z + 24);
+    this.scene.add(frontWallLeft);
+    this.colliders.push(new THREE.Box3().setFromObject(frontWallLeft));
+
+    // Front Wall Right Segment
+    const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(11.5, 14, 1.2), whWallMat);
+    frontWallRight.position.set(dockPos.x + 30.25, 7, dockPos.z + 24);
+    this.scene.add(frontWallRight);
+    this.colliders.push(new THREE.Box3().setFromObject(frontWallRight));
+
+    // Front Wall Header Beam (above roll-up door)
+    const frontHeader = new THREE.Mesh(new THREE.BoxGeometry(9, 6.5, 1.2), whWallMat);
+    frontHeader.position.set(dockPos.x + 20, 10.75, dockPos.z + 24);
+    this.scene.add(frontHeader);
+
+    // Roll-up Shutter Door
+    const shutterMat = new THREE.MeshStandardMaterial({
+      color: 0x3b4252,
+      metalness: 0.8,
+      roughness: 0.35
+    });
+    this.warehouseShutterMesh = new THREE.Mesh(new THREE.BoxGeometry(8.6, 7.5, 0.4), shutterMat);
+    this.warehouseShutterMesh.position.set(dockPos.x + 20, 3.75, dockPos.z + 24);
+    this.warehouseShutterMesh.castShadow = true;
+    this.scene.add(this.warehouseShutterMesh);
+
+    this.warehouseShutterCollider = new THREE.Box3().setFromObject(this.warehouseShutterMesh);
+    this.colliders.push(this.warehouseShutterCollider);
+
     this.buildingRects.push({ x: dockPos.x + 20, z: dockPos.z + 10, w: 32, d: 28 });
 
     // Warehouse Neon Sign
-    const signGeo = new THREE.BoxGeometry(14, 1.4, 0.2);
+    const signGeo = new THREE.BoxGeometry(16, 1.4, 0.2);
     const signMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 }); // Cyan neon
     const sign = new THREE.Mesh(signGeo, signMat);
-    sign.position.set(dockPos.x + 20, 12, dockPos.z + 24.1);
+    sign.position.set(dockPos.x + 20, 12.5, dockPos.z + 24.7);
     this.scene.add(sign);
+
+    // 3b. Warehouse 19 Interior
+    // Interior Concrete Floor
+    const interiorFloor = new THREE.Mesh(
+      new THREE.BoxGeometry(31, 0.3, 27),
+      new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.95 })
+    );
+    interiorFloor.position.set(dockPos.x + 20, 0.75, dockPos.z + 10);
+    this.scene.add(interiorFloor);
+
+    // Cold Industrial Blue Overhead Lamps
+    const lamp1 = new THREE.PointLight(0x93c5fd, 2.5, 22);
+    lamp1.position.set(dockPos.x + 20, 9.5, dockPos.z + 16);
+    this.scene.add(lamp1);
+
+    const lamp2 = new THREE.PointLight(0x67e8f9, 2.5, 22);
+    lamp2.position.set(dockPos.x + 20, 9.5, dockPos.z + 4);
+    this.scene.add(lamp2);
+
+    // Industrial Storage Shelving Racks (Left side & Right side)
+    const rackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3 });
+    const crateMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 });
+
+    // Left Shelf Rack
+    const leftRack = new THREE.Mesh(new THREE.BoxGeometry(3.5, 7, 14), rackMat);
+    leftRack.position.set(dockPos.x + 9, 3.5, dockPos.z + 8);
+    this.scene.add(leftRack);
+    this.colliders.push(new THREE.Box3().setFromObject(leftRack));
+
+    // Right Shelf Rack
+    const rightRack = new THREE.Mesh(new THREE.BoxGeometry(3.5, 7, 14), rackMat);
+    rightRack.position.set(dockPos.x + 31, 3.5, dockPos.z + 8);
+    this.scene.add(rightRack);
+    this.colliders.push(new THREE.Box3().setFromObject(rightRack));
+
+    // Office Desk & Manifest Computer Terminal (at warehouseDeskPos: 92, 0, -178)
+    const deskMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(3.2, 1.2, 1.8),
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 })
+    );
+    deskMesh.position.set(this.warehouseDeskPos.x, 0.6, this.warehouseDeskPos.z);
+    this.scene.add(deskMesh);
+    this.colliders.push(new THREE.Box3().setFromObject(deskMesh));
+
+    // Glowing Computer Terminal Screen
+    const screenMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.8, 0.1),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 }) // Glowing cyan display
+    );
+    screenMesh.position.set(this.warehouseDeskPos.x, 1.6, this.warehouseDeskPos.z - 0.5);
+    this.scene.add(screenMesh);
+
+    // Cold Storage Locker 4B (at warehouseLockerPos: 78, 0, -180)
+    const lockerMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 3.2, 1.6),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 })
+    );
+    lockerMesh.position.set(this.warehouseLockerPos.x, 1.6, this.warehouseLockerPos.z);
+    this.scene.add(lockerMesh);
+    this.colliders.push(new THREE.Box3().setFromObject(lockerMesh));
+
+    // Electronic Keypad Glow
+    const keypadGlow = new THREE.PointLight(0x10b981, 1.5, 4); // Emerald lock glow
+    keypadGlow.position.set(this.warehouseLockerPos.x, 2.0, this.warehouseLockerPos.z + 0.9);
+    this.scene.add(keypadGlow);
 
     // 4. Harbor Gantry Crane
     const craneMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6, roughness: 0.4 });
@@ -468,6 +599,20 @@ export class World {
       position: new THREE.Vector3(dockPos.x, 0, dockPos.z),
       type: 'docks'
     });
+  }
+
+  public openWarehouseShutter(): void {
+    this.isWarehouseShutterOpen = true;
+    const idx = this.colliders.indexOf(this.warehouseShutterCollider);
+    if (idx !== -1) {
+      this.colliders.splice(idx, 1);
+    }
+  }
+
+  public update(deltaTime: number): void {
+    if (this.isWarehouseShutterOpen && this.warehouseShutterMesh && this.warehouseShutterMesh.position.y < 9.5) {
+      this.warehouseShutterMesh.position.y += deltaTime * 3.5;
+    }
   }
 
   public updateStreetlights(timeOfDay: number): void {

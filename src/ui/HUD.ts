@@ -47,6 +47,8 @@ export class HUD {
 
   // Evidence Modal
   private evidenceModalEl: HTMLElement;
+  private evidenceTitleEl: HTMLElement;
+  private evidenceCaptionEl: HTMLElement;
   private photoCanvas: HTMLCanvasElement;
   private continueMissionBtn: HTMLElement;
   private closeEvidenceBtn: HTMLElement;
@@ -102,6 +104,8 @@ export class HUD {
     this.dialogueOptionsEl = document.getElementById('dialogue-options')!;
 
     this.evidenceModalEl = document.getElementById('evidence-modal')!;
+    this.evidenceTitleEl = document.querySelector('.evidence-title')!;
+    this.evidenceCaptionEl = document.querySelector('.evidence-caption')!;
     this.photoCanvas = document.getElementById('photo-canvas') as HTMLCanvasElement;
     this.continueMissionBtn = document.getElementById('continue-mission-btn')!;
     this.closeEvidenceBtn = document.getElementById('close-evidence-btn')!;
@@ -175,8 +179,14 @@ export class HUD {
       this.vehicleSpeedoEl.classList.add('hidden');
       this.weaponDisplayEl.classList.remove('hidden');
 
-      this.ammoClipEl.innerText = `${player.ammoClip}`;
-      this.ammoReserveEl.innerText = `${player.ammoReserve}`;
+      this.weaponNameEl.innerText = player.currentWeaponName;
+      if (player.currentWeapon === 'unarmed') {
+        this.ammoClipEl.innerText = '--';
+        this.ammoReserveEl.innerText = '--';
+      } else {
+        this.ammoClipEl.innerText = `${player.activeClip}`;
+        this.ammoReserveEl.innerText = `${player.activeReserve}`;
+      }
 
       // Crosshair when aiming
       if (cameraIsAiming(player)) {
@@ -363,14 +373,100 @@ export class HUD {
   }
 
   // Evidence Modal
-  public showEvidence(onContinue: () => void): void {
+  public showEvidence(
+    typeOrCb?: 'photo' | 'manifest' | (() => void),
+    onContinue?: () => void
+  ): void {
+    let type: 'photo' | 'manifest' = 'photo';
+    let cb = onContinue;
+    if (typeof typeOrCb === 'function') {
+      cb = typeOrCb;
+      type = 'photo';
+    } else if (typeOrCb) {
+      type = typeOrCb;
+    }
+
+    if (type === 'manifest') {
+      this.evidenceTitleEl.innerText = 'EVIDENCE COLLECTED: MERIDIAN SHIPPING MANIFEST';
+      this.evidenceCaptionEl.innerHTML = `
+        <strong>Document:</strong> Meridian Logistics Pier 19 Bill of Lading &bull; <strong>Consignee:</strong> Marrow Syndicate<br>
+        <em>Encrypted shipment manifest confirms multiple consignments of tactical hardware and encrypted server storage racks authorized directly by Councilman Vance Albright. Storage Locker 4B contains the primary encryption key drive.</em>
+      `;
+      this.renderManifestDocument();
+      this.continueMissionBtn.innerText = 'SECURE MANIFEST & PROCEED';
+    } else {
+      this.evidenceTitleEl.innerText = 'EVIDENCE COLLECTED: HARBOR PHOTOGRAPH';
+      this.evidenceCaptionEl.innerHTML = `
+        <strong>Location:</strong> Pier 19, Old Harbor &bull; <strong>Date:</strong> 3 Nights Ago<br>
+        <em>The photograph shows Lena Voss speaking to an unidentified man in a dark trench coat next to a black freighter container. On the back, handwritten in Lena's script: "Jonah warned me. Check Adrian's safe."</em>
+      `;
+      this.renderHarborPhoto();
+      this.continueMissionBtn.innerText = 'TAKE PHOTOGRAPH & CONTINUE';
+    }
+
     this.evidenceModalEl.classList.remove('hidden');
     const handler = () => {
       this.hideEvidence();
       this.continueMissionBtn.removeEventListener('click', handler);
-      onContinue();
+      if (cb) cb();
     };
     this.continueMissionBtn.addEventListener('click', handler);
+  }
+
+  private renderManifestDocument(): void {
+    const ctx = this.photoCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Dark slate corporate paper background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 400, 260);
+
+    // Border and header banner
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(8, 8, 384, 244);
+
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(8, 8, 384, 30);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('MERIDIAN LOGISTICS // PORT OF VESPERA', 16, 27);
+
+    // Document Details
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9.5px monospace';
+    ctx.fillText('BILL OF LADING: #ML-7729-CS    DATE: 2026-09-08', 16, 54);
+    ctx.fillText('FACILITY: PIER 19 COLD STORAGE (BAY 4)', 16, 68);
+    ctx.fillText('SHIPPER: MERIDIAN DEVELOPMENT CORP [OFFSHORE]', 16, 82);
+    ctx.fillText('CONSIGNEE: MARROW SYNDICATE SPECIAL ACCOUNTS', 16, 96);
+
+    // Table Header
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(16, 108, 368, 18);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText('ITEM / CODE              QTY   STATUS', 20, 121);
+
+    // Items
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText('REFRIG. MIL-SPEC DRIVES   04   SECURED (LOCKER 4B)', 20, 139);
+    ctx.fillStyle = '#f87171';
+    ctx.fillText('TACTICAL HARDWARE KITS    12   TRANSFERRED', 20, 153);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('MERIDIAN LEASE LEDGER     01   ENCRYPTED', 20, 167);
+
+    // Councilman Signature Stamp
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 9.5px monospace';
+    ctx.fillText('AUTHORIZATION: V. ALBRIGHT (COUNCIL DISTRICT 4)', 16, 196);
+
+    // Confidential Red Stamp
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(210, 204, 172, 28);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('RESTRICTED // MARROW SYNDICATE', 216, 222);
   }
 
   public hideEvidence(): void {

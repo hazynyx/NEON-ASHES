@@ -17,6 +17,7 @@ import { EventBus } from './EventBus.ts';
 import { EnemyManager } from '../ai/EnemyAI.ts';
 import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
+import { createMission04Data } from '../missions/data/M04_ColdStorage.ts';
 
 export class Game {
   public scene: THREE.Scene;
@@ -106,6 +107,16 @@ export class Game {
           setTimeout(() => {
             this.missionMgr.startMission(createMission03Data(this.world.pier19Pos));
           }, 800);
+        } else if (mission.id === 'M03') {
+          setTimeout(() => {
+            this.missionMgr.startMission(
+              createMission04Data(
+                this.world.warehouseEntrancePos,
+                this.world.warehouseDeskPos,
+                this.world.warehouseLockerPos
+              )
+            );
+          }, 800);
         }
       });
     });
@@ -165,6 +176,7 @@ export class Game {
 
     // 2. Update Environment & Lighting
     this.lighting.update(deltaTime, this.player.position);
+    this.world.update(deltaTime);
     this.world.updateStreetlights(this.lighting.timeOfDay);
 
     // 3. Update Vehicle Manager
@@ -259,6 +271,24 @@ export class Game {
         const dist = this.player.position.distanceTo(targetPos);
         if (dist < 5.0) {
           return { text: "Search Courier Car & Take Storage Key", key: 'E' };
+        }
+      }
+
+      // Mission M04 specific interaction prompts
+      if (currentObj.id === 'unlock_gate') {
+        const dist = this.player.position.distanceTo(this.world.warehouseEntrancePos);
+        if (dist < 5.0) {
+          return { text: "Unlock Roll-Up Shutter [Pier 19 Key]", key: 'E' };
+        }
+      } else if (currentObj.id === 'search_manifest') {
+        const dist = this.player.position.distanceTo(this.world.warehouseDeskPos);
+        if (dist < 4.2) {
+          return { text: "Inspect Meridian Shipping Manifest", key: 'E' };
+        }
+      } else if (currentObj.id === 'retrieve_drive') {
+        const dist = this.player.position.distanceTo(this.world.warehouseLockerPos);
+        if (dist < 4.2) {
+          return { text: "Extract Military Encrypted Drive", key: 'E' };
         }
       }
     }
@@ -419,6 +449,85 @@ export class Game {
       const distFromPier = this.player.position.distanceTo(this.world.pier19Pos);
       if (this.player.isInVehicle && distFromPier > 85.0) {
         this.missionMgr.advanceObjective(); // Completes M03!
+      }
+    }
+
+    // --- M04 Handlers ---
+    // Objective: goto_warehouse
+    if (currentObj.id === 'goto_warehouse') {
+      const dist = this.player.position.distanceTo(this.world.warehouseEntrancePos);
+      if (dist < 5.5) {
+        this.missionMgr.advanceObjective(); // Proceed to unlock_gate
+      }
+    }
+
+    // Objective: unlock_gate
+    if (currentObj.id === 'unlock_gate') {
+      const dist = this.player.position.distanceTo(this.world.warehouseEntrancePos);
+      if (dist < 5.0 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.audio.playDoorSlam();
+        this.world.openWarehouseShutter();
+        this.missionMgr.advanceObjective(); // Gate opened, proceed to search_manifest!
+      }
+    }
+
+    // Objective: search_manifest
+    if (currentObj.id === 'search_manifest') {
+      const dist = this.player.position.distanceTo(this.world.warehouseDeskPos);
+      if (dist < 4.2 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.input.exitPointerLock();
+        this.hud.showEvidence('manifest', () => {
+          this.input.requestPointerLock();
+          this.missionMgr.advanceObjective(); // Manifest photographed, proceed to retrieve_drive!
+        });
+      }
+    }
+
+    // Objective: retrieve_drive
+    if (currentObj.id === 'retrieve_drive') {
+      const dist = this.player.position.distanceTo(this.world.warehouseLockerPos);
+      if (dist < 4.2 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.audio.playReload();
+
+        // Syndicate Heavy Guards pull up outside and ambush!
+        this.enemyMgr.clear();
+        this.enemyMgr.spawnEnemies([
+          new THREE.Vector3(85, 0, -150),
+          new THREE.Vector3(78, 0, -147),
+          new THREE.Vector3(92, 0, -147)
+        ]);
+
+        // Dialogue callout
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'SYNDICATE HITMAN',
+            text: "Someone breached Warehouse 19! Lock down the dock and eliminate the intruder!"
+          },
+          {
+            speaker: 'KALEB',
+            text: "Syndicate clean-up crew. Time to break out this 12-gauge."
+          }
+        ], () => {
+          this.missionMgr.advanceObjective(); // Ambush active, eliminate guards!
+        });
+      }
+    }
+
+    // Objective: eliminate_guards
+    if (currentObj.id === 'eliminate_guards') {
+      if (this.enemyMgr.areAllDead()) {
+        this.missionMgr.advanceObjective(); // Proceed to escape_perimeter!
+      }
+    }
+
+    // Objective: escape_perimeter
+    if (currentObj.id === 'escape_perimeter') {
+      const distFromPier = this.player.position.distanceTo(this.world.pier19Pos);
+      if (this.player.isInVehicle && distFromPier > 95.0) {
+        this.missionMgr.advanceObjective(); // Completes M04!
       }
     }
   }

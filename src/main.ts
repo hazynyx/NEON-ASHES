@@ -9,6 +9,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   const game = new Game(canvas);
+  (window as any).game = game;
   const loop = new GameLoop(game);
   loop.start();
 
