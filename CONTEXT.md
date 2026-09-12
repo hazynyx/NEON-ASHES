@@ -11,22 +11,21 @@
 ---
 
 ## 2. CURRENT DEVELOPMENT STATUS
-- **Overall Completion:** 18% (Phase 0 Foundation, Phase 1 Prototype, and Vertical Slice Missions M01 & M02 Complete)
-- **Current Milestone:** Phase 2: Vertical Slice (M01 & M02 Complete, starting M03 "The Harbor")
-- **Current Focus:** Mission M03 ("The Harbor") implementation: investigating Pier 19 in Old Harbor based on Lena's hidden photograph, staking out the freight exchange, following a Marrow Syndicate target, and securing the storage locker key.
+- **Overall Completion:** 25% (Phase 0 Foundation, Phase 1 Prototype, and Vertical Slice Missions M01, M02, M03 Complete)
+- **Current Milestone:** Phase 2: Vertical Slice (M01, M02, M03 Complete, starting M04 "Cold Storage")
+- **Current Focus:** Mission M04 ("Cold Storage") implementation: infiltrating Pier 19 Warehouse 19 using the recovered storage key, cracking the internal security lock, searching freight manifests and cold storage lockers for encrypted data drives linking Meridian Properties to Lena's disappearance, and neutralizing armed warehouse guards.
 - **Last Completed:**
-  - Mission M02 ("Old Debts") implemented and tested start-to-finish.
-  - Enemy Combat AI (`src/ai/EnemyAI.ts`) with line-of-sight tracking, weapon firing, damage dealing, hit reactions, and death ragdoll.
-  - Story character Jonah Reyes (`jonah_reyes`) added outside Adrian's Auto Repair garage with canonical dialogue.
-  - Garage roll-up shutter interaction, interior workshop safe cracking, and Marrow Syndicate ambush shootout.
-  - Vehicle escape sequence and mission reward payout ($800 cash + shotgun unlock).
+  - Mission M03 ("The Harbor") implemented and verified start-to-finish in browser.
+  - Old Harbor Pier 19 waterfront environment (`World.ts`): concrete wharf, water surface, Warehouse 19 exterior with neon cyan signage, yellow gantry crane, and stacked cargo containers.
+  - Objective sequence in `src/missions/data/M03_TheHarbor.ts`: driving to Pier 19, container stack vantage point stakeout, courier pursuit, disabling target vehicle, recovering warehouse storage key, and escaping the harbor.
 - **Currently Broken:** None. All systems tested and verified in browser.
 - **Next Tasks:**
-  1. Implement Mission M03 ("The Harbor"):
-     - Pier 19 waterfront environment in Old Harbor district (`World.ts` extension).
-     - Surveillance / stakeout mechanic observing the suspicious exchange.
-     - Vehicle tailing / pursuit sequence through the harbor district.
-     - Recover the warehouse storage key.
+  1. Implement Mission M04 ("Cold Storage"):
+     - Pier 19 Warehouse 19 interior environment with freight pallets, cold storage racks, and security terminal.
+     - Storage keycard door interaction.
+     - Document / encrypted drive search puzzle.
+     - Armed warehouse guards shootout (`EnemyAI.ts`).
+     - Escape Pier 19 with evidence.
   2. Implement Shotgun weapon class (`Player.ts` weapon switching with keys `1`, `2`, `3`).
   3. Expand Police Pursuit AI (`PoliceAI.ts`) responding to gunfire and vehicle crimes.
 
@@ -42,14 +41,15 @@
 | 3D Rendering & Camera | [COMPLETE] | Three.js WebGL renderer, ACES tone mapping, spring 3rd-person & chase camera |
 | Player Movement & Physics | [COMPLETE] | Walk, jog, sprint with stamina drain, jump, crouch, collision sliding |
 | Vehicle Controller & Physics | [COMPLETE] | Vesper Sedan with steering, braking, speed readout in MPH, enter/exit [E] |
-| World & City District (Eastline) | [COMPLETE] | Multi-lane avenues, lit window facades, streetlights, colliders, POIs |
+| World & City District (Eastline & Harbor) | [COMPLETE] | Multi-lane avenues, lit window facades, Pier 19 docks, colliders, POIs |
 | NPC & Traffic AI | [COMPLETE] | Mrs. Gable, Jonah Reyes + reactive pedestrians fleeing gunfire |
 | Combat & Enemy AI | [COMPLETE] | Marrow Syndicate enforcers, line-of-sight shooting, hit detection, flinch, death |
 | Police & Wanted System | [PARTIAL] | UI stars active upon crimes; patrol cruiser vehicle spawned |
 | Mission Engine & Objectives | [COMPLETE] | Data-driven framework with distance tracking and auto-triggers |
 | Mission M01 — Home Again | [COMPLETE] | Playable start-to-finish with dialogue, evidence inspection, and reward |
 | Mission M02 — Old Debts | [COMPLETE] | Playable start-to-finish: Jonah dialogue, safe cracking, syndicate shootout, escape |
-| Mission M03 — The Harbor | [NOT STARTED] | Next target per canonical storyline |
+| Mission M03 — The Harbor | [COMPLETE] | Playable start-to-finish: Pier 19, surveillance stakeout, courier pursuit, key retrieval |
+| Mission M04 — Cold Storage | [NOT STARTED] | Next target per canonical storyline |
 | UI & HUD (No Glassmorphism) | [COMPLETE] | Solid dark surfaces (`#0B0D0F`, `#15181B`, `#E58E26`), minimap, speedo, modals |
 | Audio & Sound Synthesizer | [COMPLETE] | Web Audio API procedural synthesis with zero missing asset latency |
 | Persistence & Save/Load | [COMPLETE] | LocalStorage/IndexedDB state persistence with auto-save toast |
@@ -73,8 +73,22 @@
   - Survive Marrow Syndicate ambush shootout [COMPLETE]
   - Escape the area in vehicle [COMPLETE]
   - Complete mission & receive $800 + shotgun unlock [COMPLETE]
-- **M03 — The Harbor:** [NOT STARTED] — Next target.
-- **M04–M30:** [NOT STARTED]
+- **M03 — The Harbor:** [COMPLETE]
+  - Drive to Pier 19 in Old Harbor [COMPLETE]
+  - Reach container stack vantage point [COMPLETE]
+  - Stake out crate exchange using binoculars [COMPLETE]
+  - Pursue and intercept courier vehicle [COMPLETE]
+  - Recover Pier 19 Cold Storage Key [COMPLETE]
+  - Escape harbor area with key [COMPLETE]
+  - Complete mission & receive $1000 + Pier 19 Key [COMPLETE]
+- **M04 — Cold Storage:** [NOT STARTED] — Next target.
+  - Return to Pier 19 Warehouse 19 with keycard [NOT STARTED]
+  - Unlock high-security roll-up gate [NOT STARTED]
+  - Search interior refrigerated shipping crates [NOT STARTED]
+  - Recover encrypted Marrow/Meridian shipment manifest [NOT STARTED]
+  - Eliminate arriving Syndicate heavy guards [NOT STARTED]
+  - Escape Pier 19 perimeter [NOT STARTED]
+- **M05–M30:** [NOT STARTED]
 
 ---
 
@@ -113,22 +127,27 @@
 ---
 
 ## 7. RECENT CHANGES & CHANGE LOG
-### 2026-09-12 (Session 2)
-- Created `src/ai/EnemyAI.ts` with Enemy entity, combat state machine, line-of-sight engagement, gunfire audio, flinching, and death ragdoll.
-- Created `src/missions/data/M02_OldDebts.ts` defining data-driven objectives for Mission M02.
-- Added story character **Jonah Reyes** to `src/ai/NPCManager.ts` stationed at Adrian's garage with full dialogue tree.
-- Updated `src/player/Player.ts` raycast shooting to detect and damage enemy entities.
-- Integrated M02 into `src/core/Game.ts`: meeting Jonah, entering Adrian's garage, safe cracking, Marrow Syndicate ambush shootout, and vehicle getaway.
-- Automatic mission chaining: completing M01 now queues M02, rewarding cash, ammo, and unlocking weapons.
-- Tested and verified Mission M02 in browser subagent: verified HUD updates, Jonah dialogue overlay, 2-star wanted status, shootout combat, and M02 Mission Passed banner ($1490 cash total).
+### 2026-09-12 (Session 3)
+- Created Old Harbor Pier 19 waterfront in `src/world/World.ts`: deep water surface, concrete wharf platform, Pier 19 Warehouse 19 with cyan signage, 32m yellow gantry crane, and multi-colored stacked shipping containers.
+- Created `src/missions/data/M03_TheHarbor.ts` defining canonical data-driven mission objectives for Mission M03.
+- Integrated M03 into `src/core/Game.ts`:
+  - Pier 19 GPS waypoint tracking and container stack vantage point navigation.
+  - Binocular stakeout prompt and dialogue with Kaleb identifying the man in the trench coat from Lena's photograph.
+  - High-speed courier pursuit sequence and vehicle interception mechanic.
+  - Physical recovery of the Pier 19 Cold Storage Key from the disabled vehicle.
+  - Harbor perimeter vehicle escape trigger and mission completion rewarding $1000 cash and inventory storage key.
+- Verified Mission M03 end-to-end via automated browser test with recorded screenshots and WebP gameplay recording.
+- Production bundle verification (`npm run build`) passing cleanly with zero errors.
 
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
-- **Missions M01 ("Home Again") and M02 ("Old Debts")** are both fully playable and tested.
-- **Enemy AI & Combat** are established and functioning.
-- The next development chunk is **Mission M03 ("The Harbor")** per `MISSION_DESIGN.md`:
-  - Kaleb heads down to Pier 19 in Old Harbor using the photograph lead.
-  - Stakeout observing a covert container handoff.
-  - Tailing/chasing the target's vehicle.
-  - Acquiring the storage key to access the cold storage warehouse in M04.
+- **Missions M01 ("Home Again"), M02 ("Old Debts"), and M03 ("The Harbor")** are fully playable, tested, and verified.
+- Kaleb possesses the **Pier 19 Cold Storage Key** in his inventory.
+- The next development chunk is **Mission M04 ("Cold Storage")** per `MISSION_DESIGN.md` & `STORY_BIBLE.md`:
+  - Return to Pier 19 Warehouse 19.
+  - Use the keycard to unlock the refrigerated warehouse roll-up gate.
+  - Search interior crates for the encrypted Meridian/Marrow shipment manifest.
+  - Eliminate arriving Syndicate heavy guards.
+  - Escape Pier 19 perimeter.
+- Weapon system expansion: implement Shotgun weapon class and weapon switching (`1`: Unarmed/Pistol, `2`: Shotgun).

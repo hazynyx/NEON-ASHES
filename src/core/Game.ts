@@ -16,6 +16,7 @@ import { SaveSystem } from './SaveSystem.ts';
 import { EventBus } from './EventBus.ts';
 import { EnemyManager } from '../ai/EnemyAI.ts';
 import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
+import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
 
 export class Game {
   public scene: THREE.Scene;
@@ -100,6 +101,10 @@ export class Game {
         if (mission.id === 'M01') {
           setTimeout(() => {
             this.missionMgr.startMission(createMission02Data(this.world.adrianGaragePos));
+          }, 800);
+        } else if (mission.id === 'M02') {
+          setTimeout(() => {
+            this.missionMgr.startMission(createMission03Data(this.world.pier19Pos));
           }, 800);
         }
       });
@@ -241,6 +246,21 @@ export class Game {
           return { text: "Search Workbench & Safe", key: 'E' };
         }
       }
+
+      // Mission M03 specific interaction prompts
+      if (currentObj.id === 'observe_handoff') {
+        const vantagePos = new THREE.Vector3(this.world.pier19Pos.x - 15, 0, this.world.pier19Pos.z + 15);
+        const dist = this.player.position.distanceTo(vantagePos);
+        if (dist < 6.0) {
+          return { text: "Stake Out Crane with Binoculars", key: 'E' };
+        }
+      } else if (currentObj.id === 'retrieve_key') {
+        const targetPos = new THREE.Vector3(20, 0, -110);
+        const dist = this.player.position.distanceTo(targetPos);
+        if (dist < 5.0) {
+          return { text: "Search Courier Car & Take Storage Key", key: 'E' };
+        }
+      }
     }
 
     return null;
@@ -343,6 +363,62 @@ export class Game {
       const distFromGarage = this.player.position.distanceTo(this.world.adrianGaragePos);
       if (this.player.isInVehicle && distFromGarage > 65.0) {
         this.missionMgr.advanceObjective(); // Completes M02!
+      }
+    }
+
+    // --- M03 Handlers ---
+    // Objective: vantage_point
+    if (currentObj.id === 'vantage_point') {
+      const vantagePos = new THREE.Vector3(this.world.pier19Pos.x - 15, 0, this.world.pier19Pos.z + 15);
+      if (this.player.position.distanceTo(vantagePos) < 4.5) {
+        this.missionMgr.advanceObjective();
+      }
+    }
+
+    // Objective: observe_handoff
+    if (currentObj.id === 'observe_handoff') {
+      const vantagePos = new THREE.Vector3(this.world.pier19Pos.x - 15, 0, this.world.pier19Pos.z + 15);
+      if (this.player.position.distanceTo(vantagePos) < 6.0 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'KALEB',
+            text: "There he is... The man from Lena's photograph in the dark trench coat."
+          },
+          {
+            speaker: 'KALEB',
+            text: "He just handed a heavy steel case and keycard to the courier in the black coupe! They're taking off!"
+          }
+        ], () => {
+          this.missionMgr.advanceObjective(); // Proceeds to chase_courier!
+        });
+      }
+    }
+
+    // Objective: chase_courier
+    if (currentObj.id === 'chase_courier') {
+      const targetPos = new THREE.Vector3(20, 0, -110);
+      if (this.player.position.distanceTo(targetPos) < 16.0) {
+        this.audio.playCollision(1.0);
+        this.audio.playTireScreech();
+        this.missionMgr.advanceObjective(); // Courier disabled, proceed to retrieve_key!
+      }
+    }
+
+    // Objective: retrieve_key
+    if (currentObj.id === 'retrieve_key') {
+      const targetPos = new THREE.Vector3(20, 0, -110);
+      if (this.player.position.distanceTo(targetPos) < 5.0 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.missionMgr.advanceObjective(); // Key secured, proceed to escape_harbor!
+      }
+    }
+
+    // Objective: escape_harbor
+    if (currentObj.id === 'escape_harbor') {
+      const distFromPier = this.player.position.distanceTo(this.world.pier19Pos);
+      if (this.player.isInVehicle && distFromPier > 85.0) {
+        this.missionMgr.advanceObjective(); // Completes M03!
       }
     }
   }

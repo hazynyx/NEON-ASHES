@@ -19,6 +19,7 @@ export class World {
   // Key story building positions
   public lenaApartmentPos: THREE.Vector3 = new THREE.Vector3(30, 0, -45);
   public adrianGaragePos: THREE.Vector3 = new THREE.Vector3(-60, 0, 50);
+  public pier19Pos: THREE.Vector3 = new THREE.Vector3(65, 0, -180);
 
   // Streetlights
   private streetlightPoints: THREE.PointLight[] = [];
@@ -53,7 +54,10 @@ export class World {
     // 5. Build Adrian's Garage
     this.createAdrianGarage();
 
-    // 6. Add Street Furniture & Props (Streetlights, Dumpsters, Hydrants)
+    // 6. Build Old Harbor & Pier 19
+    this.createOldHarborPier();
+
+    // 7. Add Street Furniture & Props (Streetlights, Dumpsters, Hydrants)
     this.createStreetProps();
   }
 
@@ -357,6 +361,112 @@ export class World {
 
       const dBox = new THREE.Box3().setFromObject(dumpster);
       this.colliders.push(dBox);
+    });
+  }
+
+  private createOldHarborPier(): void {
+    const dockPos = this.pier19Pos;
+
+    // 1. Water Surface
+    const waterGeo = new THREE.PlaneGeometry(600, 300);
+    const waterMat = new THREE.MeshStandardMaterial({
+      color: 0x0a192f,
+      roughness: 0.15,
+      metalness: 0.85
+    });
+    const water = new THREE.Mesh(waterGeo, waterMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(0, -0.3, -310);
+    this.scene.add(water);
+
+    // 2. Concrete Pier / Wharf Platform
+    const pierGeo = new THREE.BoxGeometry(95, 1.2, 90);
+    const pierMat = new THREE.MeshStandardMaterial({
+      color: 0x333b45,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    const pier = new THREE.Mesh(pierGeo, pierMat);
+    pier.position.set(dockPos.x, 0.6, dockPos.z);
+    pier.receiveShadow = true;
+    this.scene.add(pier);
+
+    // Dock road for minimap
+    this.roads.push({ x1: 50, z1: -120, x2: dockPos.x, z2: dockPos.z, width: 12 });
+
+    // 3. Pier 19 Cold Storage Warehouse
+    const whGeo = new THREE.BoxGeometry(32, 14, 28);
+    const whMat = new THREE.MeshStandardMaterial({
+      color: 0x222a36,
+      roughness: 0.75,
+      metalness: 0.3
+    });
+    const warehouse = new THREE.Mesh(whGeo, whMat);
+    warehouse.position.set(dockPos.x + 20, 7, dockPos.z + 10);
+    warehouse.castShadow = true;
+    warehouse.receiveShadow = true;
+    this.scene.add(warehouse);
+
+    const whBox = new THREE.Box3().setFromObject(warehouse);
+    this.colliders.push(whBox);
+    this.buildingRects.push({ x: dockPos.x + 20, z: dockPos.z + 10, w: 32, d: 28 });
+
+    // Warehouse Neon Sign
+    const signGeo = new THREE.BoxGeometry(14, 1.4, 0.2);
+    const signMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 }); // Cyan neon
+    const sign = new THREE.Mesh(signGeo, signMat);
+    sign.position.set(dockPos.x + 20, 12, dockPos.z + 24.1);
+    this.scene.add(sign);
+
+    // 4. Harbor Gantry Crane
+    const craneMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6, roughness: 0.4 });
+    const craneTower = new THREE.Mesh(new THREE.BoxGeometry(3.5, 32, 3.5), craneMat);
+    craneTower.position.set(dockPos.x - 28, 16, dockPos.z - 20);
+    craneTower.castShadow = true;
+    this.scene.add(craneTower);
+
+    const craneArm = new THREE.Mesh(new THREE.BoxGeometry(36, 2.5, 2.5), craneMat);
+    craneArm.position.set(dockPos.x - 14, 30, dockPos.z - 20);
+    craneArm.castShadow = true;
+    this.scene.add(craneArm);
+
+    // 5. Stacked Shipping Containers (Red, Blue, Green, Orange)
+    const containerColors = [0xb91c1c, 0x1d4ed8, 0x15803d, 0xc2410c];
+    const containerCoords = [
+      { x: dockPos.x - 15, z: dockPos.z + 15, h: 0, c: 0 },
+      { x: dockPos.x - 15, z: dockPos.z + 15, h: 2.8, c: 1 },
+      { x: dockPos.x - 15, z: dockPos.z + 8, h: 0, c: 2 },
+      { x: dockPos.x - 22, z: dockPos.z + 15, h: 0, c: 3 },
+      { x: dockPos.x - 22, z: dockPos.z + 8, h: 0, c: 0 },
+      { x: dockPos.x - 22, z: dockPos.z + 8, h: 2.8, c: 2 },
+      { x: dockPos.x + 5, z: dockPos.z - 25, h: 0, c: 1 },
+      { x: dockPos.x + 5, z: dockPos.z - 25, h: 2.8, c: 3 },
+      { x: dockPos.x + 13, z: dockPos.z - 25, h: 0, c: 0 }
+    ];
+
+    containerCoords.forEach(cc => {
+      const cGeo = new THREE.BoxGeometry(6.2, 2.6, 2.8);
+      const cMat = new THREE.MeshStandardMaterial({
+        color: containerColors[cc.c],
+        roughness: 0.65,
+        metalness: 0.4
+      });
+      const cMesh = new THREE.Mesh(cGeo, cMat);
+      cMesh.position.set(cc.x, 1.3 + cc.h, cc.z);
+      cMesh.castShadow = true;
+      cMesh.receiveShadow = true;
+      this.scene.add(cMesh);
+
+      const cBox = new THREE.Box3().setFromObject(cMesh);
+      this.colliders.push(cBox);
+      this.buildingRects.push({ x: cc.x, z: cc.z, w: 6.2, d: 2.8 });
+    });
+
+    this.pois.push({
+      id: 'pier_19',
+      name: 'Pier 19 Old Harbor',
+      position: new THREE.Vector3(dockPos.x, 0, dockPos.z),
+      type: 'docks'
     });
   }
 
