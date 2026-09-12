@@ -14,6 +14,8 @@ import { AudioManager } from '../audio/AudioManager.ts';
 import { GameStateManager, GameMode } from './GameState.ts';
 import { SaveSystem } from './SaveSystem.ts';
 import { EventBus } from './EventBus.ts';
+import { EnemyManager } from '../ai/EnemyAI.ts';
+import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 
 export class Game {
   public scene: THREE.Scene;
@@ -31,11 +33,16 @@ export class Game {
   public audio: AudioManager;
   public state: GameStateManager;
   public eventBus: EventBus;
+  public enemyMgr: EnemyManager;
 
   // Interior apartment state for M01
   private isInApartmentInterior: boolean = false;
   private apartmentDoorPos: THREE.Vector3 = new THREE.Vector3(30, 0, -29);
   private apartmentDeskPos: THREE.Vector3 = new THREE.Vector3(30, 0, -38);
+
+  // Garage safe state for M02
+  private garageShutterPos: THREE.Vector3 = new THREE.Vector3(-60, 0, 64);
+  private garageSafePos: THREE.Vector3 = new THREE.Vector3(-64, 0, 54);
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
@@ -57,6 +64,7 @@ export class Game {
     this.player = new Player(this.scene, this.audio);
     this.vehicleMgr = new VehicleManager(this.scene, this.audio);
     this.npcMgr = new NPCManager(this.scene);
+    this.enemyMgr = new EnemyManager(this.scene, this.audio);
     this.hud = new HUD();
     this.dialogueMgr = new DialogueManager(this.hud, this.audio);
 
@@ -87,6 +95,13 @@ export class Game {
       this.hud.showMissionPassed(mission.title, mission.rewards.description, () => {
         this.state.setState(GameMode.FREE_ROAM);
         this.input.requestPointerLock();
+
+        // Chain next canonical mission
+        if (mission.id === 'M01') {
+          setTimeout(() => {
+            this.missionMgr.startMission(createMission02Data(this.world.adrianGaragePos));
+          }, 800);
+        }
       });
     });
 
@@ -153,8 +168,9 @@ export class Game {
     // 4. Update Player
     this.player.update(deltaTime, this.input, this.camera, this.world.colliders, this.scene);
 
-    // 5. Update NPCs
+    // 5. Update NPCs & Enemies
     this.npcMgr.update(deltaTime, this.player, this.input);
+    this.enemyMgr.update(deltaTime, this.player);
 
     // 6. Update Camera
     const isDriving = !!this.vehicleMgr.activeVehicle;
@@ -212,6 +228,19 @@ export class Game {
           return { text: 'Search Desk & Bookcase', key: 'E' };
         }
       }
+
+      // Mission M02 specific interaction prompts
+      if (currentObj.id === 'enter_garage') {
+        const dist = this.player.position.distanceTo(this.garageShutterPos);
+        if (dist < 4.5) {
+          return { text: "Open Garage Shutter", key: 'E' };
+        }
+      } else if (currentObj.id === 'crack_safe') {
+        const dist = this.player.position.distanceTo(this.garageSafePos);
+        if (dist < 4.5) {
+          return { text: "Search Workbench & Safe", key: 'E' };
+        }
+      }
     }
 
     return null;
@@ -223,6 +252,7 @@ export class Game {
     const currentObj = this.missionMgr.getCurrentObjective();
     if (!currentObj) return;
 
+    // --- M01 Handlers ---
     // Objective: talk_to_neighbor
     if (currentObj.id === 'talk_to_neighbor') {
       if (this.npcMgr.nearbyNPC && this.npcMgr.nearbyNPC.data.id === 'mrs_gable') {
@@ -238,7 +268,6 @@ export class Game {
     if (currentObj.id === 'enter_apartment') {
       const dist = this.player.position.distanceTo(this.apartmentDoorPos);
       if (dist < 3.5 && this.input.isKeyPressed('KeyE')) {
-        // Move player inside apartment suite
         this.player.position.set(30, 0, -36);
         this.isInApartmentInterior = true;
         this.audio.playDoorSlam();
@@ -259,6 +288,61 @@ export class Game {
           this.input.requestPointerLock();
           this.missionMgr.advanceObjective(); // Completes inspect_photo & finishes M01!
         });
+      }
+    }
+
+    // --- M02 Handlers ---
+    // Objective: talk_to_jonah
+    if (currentObj.id === 'talk_to_jonah') {
+      if (this.npcMgr.nearbyNPC && this.npcMgr.nearbyNPC.data.id === 'jonah_reyes') {
+        if (this.input.isKeyPressed('KeyF')) {
+          this.dialogueMgr.startDialogue(this.npcMgr.nearbyNPC.data.dialogue || [], () => {
+            this.missionMgr.advanceObjective();
+          });
+        }
+      }
+    }
+
+    // Objective: enter_garage
+    if (currentObj.id === 'enter_garage') {
+      const dist = this.player.position.distanceTo(this.garageShutterPos);
+      if (dist < 4.0 && this.input.isKeyPressed('KeyE')) {
+        // Step into garage workshop
+        this.player.position.set(-62, 0, 56);
+        this.audio.playDoorSlam();
+        this.missionMgr.advanceObjective();
+      }
+    }
+
+    // Objective: crack_safe
+    if (currentObj.id === 'crack_safe') {
+      const dist = this.player.position.distanceTo(this.garageSafePos);
+      if (dist < 4.0 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.audio.playReload();
+
+        // Trigger Syndicate Ambush
+        this.enemyMgr.spawnSyndicateAmbush(
+          new THREE.Vector3(-58, 0, 62),
+          new THREE.Vector3(-64, 0, 62)
+        );
+
+        this.missionMgr.advanceObjective();
+      }
+    }
+
+    // Objective: eliminate_syndicate
+    if (currentObj.id === 'eliminate_syndicate') {
+      if (this.enemyMgr.areAllDead()) {
+        this.missionMgr.advanceObjective();
+      }
+    }
+
+    // Objective: escape_area
+    if (currentObj.id === 'escape_area') {
+      const distFromGarage = this.player.position.distanceTo(this.world.adrianGaragePos);
+      if (this.player.isInVehicle && distFromGarage > 65.0) {
+        this.missionMgr.advanceObjective(); // Completes M02!
       }
     }
   }

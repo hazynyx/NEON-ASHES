@@ -176,7 +176,35 @@ export class NPCManager {
     });
     this.npcs.push(mrsGable);
 
-    // 2. Ambient Pedestrians around Eastline sidewalks
+    // 2. Story NPC: Jonah Reyes at Adrian's Auto Repair garage
+    const jonahReyes = new NPC(this.scene, {
+      id: 'jonah_reyes',
+      name: 'Jonah Reyes',
+      isStoryNPC: true,
+      position: new THREE.Vector3(-58, 0, 64),
+      heading: 0,
+      dialogue: [
+        {
+          speaker: 'JONAH REYES',
+          text: "Kaleb! Man, look at you... Two years in the outer counties and you still walk like you're carrying the weight of Vespera."
+        },
+        {
+          speaker: 'KALEB',
+          text: "Good to see you, Jonah. Someone tore Lena's place apart. She left a note pointing to Adrian's old safe in the shop."
+        },
+        {
+          speaker: 'JONAH REYES',
+          text: "Adrian's safe? Your old man kept that workbench locked down. But listen, Kaleb... Lena was here three nights ago asking about Adrian's old shipping clients. Some Marrow Syndicate muscle has been watching this garage ever since."
+        },
+        {
+          speaker: 'JONAH REYES',
+          text: "Take the side door into the shop. Safe's behind the Aurelia license plates on the back wall. But watch yourself."
+        }
+      ]
+    });
+    this.npcs.push(jonahReyes);
+
+    // 3. Ambient Pedestrians around Eastline sidewalks
     const pedestrianSpawns = [
       { pos: new THREE.Vector3(38, 0, -15), heading: 0 },
       { pos: new THREE.Vector3(22, 0, 10), heading: Math.PI },

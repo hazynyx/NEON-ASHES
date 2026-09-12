@@ -447,9 +447,16 @@ export class Player {
         scene.remove(spark);
       }, 80);
 
-      // Trigger event if hit an NPC
-      if ((hit.object as any).isNPC) {
-        this.eventBus.emit('npc:hit', { npc: (hit.object as any).npcEntity, point: hit.point });
+      // Trigger event if hit an NPC or Enemy
+      let targetObj: any = hit.object;
+      while (targetObj && !targetObj.isNPC && !targetObj.isEnemy && targetObj.parent) {
+        targetObj = targetObj.parent;
+      }
+      if (targetObj && targetObj.isNPC) {
+        this.eventBus.emit('npc:hit', { npc: targetObj.npcEntity, point: hit.point });
+      } else if (targetObj && targetObj.isEnemy) {
+        targetObj.enemyEntity.takeDamage(35);
+        this.eventBus.emit('enemy:hit', { enemy: targetObj.enemyEntity, point: hit.point });
       }
       break;
     }
