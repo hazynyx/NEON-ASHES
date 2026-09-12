@@ -19,6 +19,7 @@ import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
 import { createMission04Data } from '../missions/data/M04_ColdStorage.ts';
 import { NarrationManager } from '../audio/NarrationManager.ts';
+import { PauseMenu } from '../ui/PauseMenu.ts';
 
 export class Game {
   public scene: THREE.Scene;
@@ -32,6 +33,7 @@ export class Game {
   public missionMgr: MissionManager;
   public dialogueMgr: DialogueManager;
   public narrationMgr: NarrationManager;
+  public pauseMenu: PauseMenu;
   public hud: HUD;
   public input: InputManager;
   public audio: AudioManager;
@@ -79,14 +81,35 @@ export class Game {
 
     this.missionMgr = new MissionManager(this.audio, this.world.lenaApartmentPos);
 
+    this.pauseMenu = new PauseMenu(
+      this.player,
+      this.missionMgr,
+      this.renderer,
+      this.camera,
+      this.audio,
+      this.narrationMgr,
+      this.lighting,
+      () => this.vehicleMgr.activeVehicle,
+      () => this.scene.fog as THREE.FogExp2,
+      () => {
+        this.state.setState(GameMode.FREE_ROAM);
+        this.input.requestPointerLock();
+      }
+    );
+
     this.setupEventListeners();
     this.setupStartScreen();
   }
 
   private setupEventListeners(): void {
-    // Pointer lock toggle
+    // Pointer lock toggle: unlock triggers pause menu
     this.input.setPointerLockCallback((isLocked) => {
-      // In pointer lock
+      if (!isLocked && (this.state.getState() === GameMode.FREE_ROAM || this.state.getState() === GameMode.MISSION_ACTIVE || this.state.getState() === GameMode.IN_VEHICLE)) {
+        if (!this.dialogueMgr.isActive && !this.pauseMenu.isOpen()) {
+          this.state.setState(GameMode.PAUSED);
+          this.pauseMenu.open('map');
+        }
+      }
     });
 
     // Handle Mission Complete Event
@@ -187,6 +210,38 @@ export class Game {
   }
 
   public update(deltaTime: number): void {
+    // 0. Check Pause / Map / Controls hotkeys
+    if (this.input.isKeyPressed('Escape') || this.input.isKeyPressed('KeyP')) {
+      if (this.pauseMenu.isOpen()) {
+        this.pauseMenu.close();
+      } else if (this.state.getState() !== GameMode.MAIN_MENU) {
+        this.state.setState(GameMode.PAUSED);
+        this.input.exitPointerLock();
+        this.pauseMenu.open('map');
+      }
+    } else if (this.input.isKeyPressed('KeyM')) {
+      if (this.pauseMenu.isOpen()) {
+        this.pauseMenu.close();
+      } else if (this.state.getState() !== GameMode.MAIN_MENU) {
+        this.state.setState(GameMode.PAUSED);
+        this.input.exitPointerLock();
+        this.pauseMenu.open('map');
+      }
+    } else if (this.input.isKeyPressed('F1')) {
+      if (this.pauseMenu.isOpen()) {
+        this.pauseMenu.close();
+      } else if (this.state.getState() !== GameMode.MAIN_MENU) {
+        this.state.setState(GameMode.PAUSED);
+        this.input.exitPointerLock();
+        this.pauseMenu.open('controls');
+      }
+    }
+
+    if (this.state.getState() === GameMode.PAUSED) {
+      this.input.update();
+      return;
+    }
+
     // 1. Process Input updates
     const mouseDelta = this.input.consumeMouseDelta();
 

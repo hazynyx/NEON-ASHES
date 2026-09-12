@@ -39,6 +39,7 @@
           <div class="cash-display">$<span id="player-cash">240</span></div>
           <div class="time-display" id="game-clock">21:45</div>
           <button id="voice-toggle-btn" class="voice-btn" title="Toggle Voice Narration">VOICE: ON</button>
+          <button id="pause-menu-btn" class="pause-btn" title="Open System Hub & Map [ESC]">MENU [ESC]</button>
         </div>
         <div id="wanted-stars" class="wanted-container">
           <span class="star" data-index="1">★</span>
@@ -168,6 +169,276 @@
           <div><kbd>Tab</kbd></div><div>Toggle Camera Perspective</div>
         </div>
         <button id="close-controls-btn" class="primary-btn">CLOSE [F1]</button>
+      </div>
+    </div>
+
+    <!-- Unified Pause Menu & System Hub (ESC / P / M / F1) -->
+    <div id="pause-menu" class="pause-menu-overlay hidden">
+      <div class="pause-menu-container">
+        <div class="pause-menu-header">
+          <div class="pause-header-left">
+            <h2 class="pause-logo">NEON ASHES</h2>
+            <span class="pause-sub">VESPERA CITY // SYSTEM HUB</span>
+          </div>
+          <div class="pause-tabs-bar">
+            <button class="pause-tab active" data-tab="map">MAP [M]</button>
+            <button class="pause-tab" data-tab="missions">MISSION LOG</button>
+            <button class="pause-tab" data-tab="graphics">GRAPHICS</button>
+            <button class="pause-tab" data-tab="audio-game">SETTINGS</button>
+            <button class="pause-tab" data-tab="save-load">SAVE / LOAD</button>
+            <button class="pause-tab" data-tab="controls">CONTROLS [F1]</button>
+          </div>
+          <div class="pause-header-right">
+            <button id="pause-quicksave-btn" class="secondary-btn small-btn">QUICKSAVE</button>
+            <button id="pause-resume-btn" class="primary-btn small-btn">RESUME [ESC]</button>
+          </div>
+        </div>
+
+        <div class="pause-menu-body">
+          <!-- Tab 1: Tactical Map -->
+          <div class="pause-tab-content active" id="tab-map">
+            <div class="map-view-wrapper">
+              <div class="map-toolbar">
+                <div id="map-coordinates-hud" class="map-coords">GPS [X: 0, Z: 0] | HEADING: 0° | DISTRICT: EASTLINE</div>
+                <div class="map-legend">
+                  <span><span class="legend-dot dot-player"></span> Kaleb</span>
+                  <span><span class="legend-dot dot-obj"></span> Objective</span>
+                  <span><span class="legend-dot dot-car"></span> Car</span>
+                  <span><span class="legend-dot dot-apt"></span> Apartment</span>
+                  <span><span class="legend-dot dot-garage"></span> Garage</span>
+                  <span><span class="legend-dot dot-pier"></span> Pier 19</span>
+                  <span><span class="legend-dot dot-diner"></span> Diner</span>
+                </div>
+              </div>
+              <div class="map-canvas-container">
+                <canvas id="world-map-canvas" width="860" height="520"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Mission Log -->
+          <div class="pause-tab-content" id="tab-missions">
+            <div class="mission-log-container">
+              <div class="mission-log-current">
+                <h3 class="log-heading">ACTIVE OPERATION</h3>
+                <div class="log-card">
+                  <div class="log-title" id="log-mission-title">PROLOGUE // HOME AGAIN</div>
+                  <div class="log-desc" id="log-mission-desc">Investigate Lena's apartment in Eastline. Speak with Mrs. Gable to gain access.</div>
+                  <h4 class="log-subheading">OBJECTIVE TIMELINE</h4>
+                  <ul class="log-obj-list" id="log-objective-list"></ul>
+                </div>
+              </div>
+              <div class="mission-log-archive">
+                <h3 class="log-heading">OPERATION DOSSIER ARCHIVE</h3>
+                <ul class="log-archive-list" id="log-completed-list">
+                  <li>No prior operations archived</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 3: Graphics Settings -->
+          <div class="pause-tab-content" id="tab-graphics">
+            <div class="settings-grid">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Post-Processing Exposure</span>
+                  <span class="setting-desc">Adjust WebGL ACES Filmic tone mapping brightness</span>
+                </div>
+                <div class="setting-control">
+                  <input type="range" id="setting-exposure" min="0.8" max="2.4" step="0.05" value="1.45">
+                  <span id="exposure-val-label" class="setting-val">1.45x</span>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Real-Time Dynamic Shadows</span>
+                  <span class="setting-desc">Enable PCF soft shadow maps for streetlights & sun/moon</span>
+                </div>
+                <div class="setting-control">
+                  <label class="switch">
+                    <input type="checkbox" id="setting-shadows" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Render Resolution Scale</span>
+                  <span class="setting-desc">Internal pixel ratio scale for display rendering</span>
+                </div>
+                <div class="setting-control">
+                  <select id="setting-resolution" class="settings-select">
+                    <option value="1.0" selected>100% Native (Crisp)</option>
+                    <option value="0.75">75% Balanced</option>
+                    <option value="0.5">50% Performance</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Atmospheric Fog Density</span>
+                  <span class="setting-desc">Noir coastal maritime fog density</span>
+                </div>
+                <div class="setting-control">
+                  <input type="range" id="setting-fog" min="0.0005" max="0.006" step="0.0002" value="0.0022">
+                  <span id="fog-val-label" class="setting-val">0.0022</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 4: Game & Audio Settings -->
+          <div class="pause-tab-content" id="tab-audio-game">
+            <div class="settings-grid">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Master Volume</span>
+                  <span class="setting-desc">Master gain for Web Audio API procedural synthesis</span>
+                </div>
+                <div class="setting-control">
+                  <input type="range" id="setting-volume" min="0" max="1" step="0.05" value="0.6">
+                  <span id="volume-val-label" class="setting-val">60%</span>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Voice Narration & Spoken Dialogue</span>
+                  <span class="setting-desc">Enable Web Speech API character voiceovers</span>
+                </div>
+                <div class="setting-control">
+                  <label class="switch">
+                    <input type="checkbox" id="setting-voice" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Mouse Look Sensitivity</span>
+                  <span class="setting-desc">Camera orbit look speed</span>
+                </div>
+                <div class="setting-control">
+                  <input type="range" id="setting-mouse-sens" min="0.4" max="2.5" step="0.1" value="1.0">
+                  <span id="sens-val-label" class="setting-val">1.0x</span>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-name">Invert Y-Axis</span>
+                  <span class="setting-desc">Invert vertical mouse look pitch</span>
+                </div>
+                <div class="setting-control">
+                  <label class="switch">
+                    <input type="checkbox" id="setting-invert-y">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 5: Save / Load System -->
+          <div class="pause-tab-content" id="tab-save-load">
+            <div class="save-slots-grid">
+              <!-- Autosave Slot -->
+              <div class="save-slot-card autosave-card">
+                <div class="slot-header">
+                  <span class="slot-type-badge">CHECKPOINT</span>
+                  <h4 id="slot-name-autosave">Autosave</h4>
+                </div>
+                <div class="slot-details" id="slot-info-autosave">
+                  <span class="slot-empty">No autosave checkpoint</span>
+                </div>
+                <div class="slot-actions">
+                  <button id="load-btn-autosave" class="secondary-btn small-btn" disabled>LOAD AUTOSAVE</button>
+                </div>
+              </div>
+
+              <!-- Manual Slot 1 -->
+              <div class="save-slot-card">
+                <div class="slot-header">
+                  <span class="slot-type-badge">MANUAL SLOT 1</span>
+                  <h4 id="slot-name-slot1">Slot 1</h4>
+                </div>
+                <div class="slot-details" id="slot-info-slot1">
+                  <span class="slot-empty">Empty Save Slot</span>
+                </div>
+                <div class="slot-actions">
+                  <button id="save-btn-slot1" class="primary-btn small-btn">SAVE</button>
+                  <button id="load-btn-slot1" class="secondary-btn small-btn" disabled>LOAD</button>
+                </div>
+              </div>
+
+              <!-- Manual Slot 2 -->
+              <div class="save-slot-card">
+                <div class="slot-header">
+                  <span class="slot-type-badge">MANUAL SLOT 2</span>
+                  <h4 id="slot-name-slot2">Slot 2</h4>
+                </div>
+                <div class="slot-details" id="slot-info-slot2">
+                  <span class="slot-empty">Empty Save Slot</span>
+                </div>
+                <div class="slot-actions">
+                  <button id="save-btn-slot2" class="primary-btn small-btn">SAVE</button>
+                  <button id="load-btn-slot2" class="secondary-btn small-btn" disabled>LOAD</button>
+                </div>
+              </div>
+
+              <!-- Manual Slot 3 -->
+              <div class="save-slot-card">
+                <div class="slot-header">
+                  <span class="slot-type-badge">MANUAL SLOT 3</span>
+                  <h4 id="slot-name-slot3">Slot 3</h4>
+                </div>
+                <div class="slot-details" id="slot-info-slot3">
+                  <span class="slot-empty">Empty Save Slot</span>
+                </div>
+                <div class="slot-actions">
+                  <button id="save-btn-slot3" class="primary-btn small-btn">SAVE</button>
+                  <button id="load-btn-slot3" class="secondary-btn small-btn" disabled>LOAD</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 6: Controls Guide -->
+          <div class="pause-tab-content" id="tab-controls">
+            <div class="controls-guide-grid">
+              <div class="ctrl-col">
+                <h4 class="ctrl-heading">MOVEMENT & INTERACTION</h4>
+                <div class="ctrl-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move / Steer Car</span></div>
+                <div class="ctrl-row"><kbd>Shift</kbd><span>Sprint / Boost</span></div>
+                <div class="ctrl-row"><kbd>Space</kbd><span>Jump / Handbrake</span></div>
+                <div class="ctrl-row"><kbd>C</kbd><span>Crouch</span></div>
+                <div class="ctrl-row"><kbd>E</kbd><span>Enter/Exit Car / Interact</span></div>
+                <div class="ctrl-row"><kbd>F</kbd><span>Talk to NPCs</span></div>
+              </div>
+              <div class="ctrl-col">
+                <h4 class="ctrl-heading">COMBAT & WEAPONS</h4>
+                <div class="ctrl-row"><kbd>Left Click</kbd><span>Shoot / Melee Punch</span></div>
+                <div class="ctrl-row"><kbd>Right Click (Hold)</kbd><span>Aim Reticle</span></div>
+                <div class="ctrl-row"><kbd>R</kbd><span>Reload Firearm</span></div>
+                <div class="ctrl-row"><kbd>1</kbd><span>Service Pistol (12/clip)</span></div>
+                <div class="ctrl-row"><kbd>2</kbd><span>12G Tactical Shotgun</span></div>
+                <div class="ctrl-row"><kbd>3</kbd><span>Holster / Unarmed</span></div>
+              </div>
+              <div class="ctrl-col">
+                <h4 class="ctrl-heading">SYSTEM NAVIGATION</h4>
+                <div class="ctrl-row"><kbd>Esc</kbd> / <kbd>P</kbd><span>Pause / System Hub</span></div>
+                <div class="ctrl-row"><kbd>M</kbd><span>Toggle Fullscreen Map</span></div>
+                <div class="ctrl-row"><kbd>F1</kbd><span>Toggle Controls Reference</span></div>
+                <div class="ctrl-row"><kbd>Tab</kbd><span>Toggle Camera View</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

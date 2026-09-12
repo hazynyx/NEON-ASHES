@@ -30,6 +30,13 @@ export class NarrationManager {
     }
   }
 
+  public setEnabled(enabled: boolean): void {
+    this.isVoiceEnabled = enabled;
+    if (!enabled && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
   private loadVoices(): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     this.voices = window.speechSynthesis.getVoices();

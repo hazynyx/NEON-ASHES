@@ -27,6 +27,19 @@ export class AudioManager {
     this.masterGain.connect(this.ctx.destination);
   }
 
+  public setMasterVolume(volume: number): void {
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), this.ctx.currentTime);
+    }
+  }
+
+  public setMuted(muted: boolean): void {
+    this.isMuted = muted;
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setValueAtTime(muted ? 0 : 0.6, this.ctx.currentTime);
+    }
+  }
+
   private ensureContext(): boolean {
     if (!this.ctx) {
       this.init();

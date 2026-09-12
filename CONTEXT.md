@@ -55,8 +55,11 @@
 | Mission M04 — Cold Storage | [COMPLETE] | Playable start-to-finish: Warehouse 19 interior, manifest inspection, drive pickup, ambush, escape |
 | Mission M05 — The Journalist | [NOT STARTED] | Next target per Act II storyline |
 | UI & HUD (No Glassmorphism) | [COMPLETE] | Solid dark surfaces (`#0B0D0F`, `#15181B`, `#E58E26`), minimap, speedo, modals |
+| Pause Menu & System Hub | [COMPLETE] | Integrated hub (`ESC`/`P`) with tabs for Map, Log, Graphics, Settings, Save/Load, Controls |
+| Tactical World Map & GPS | [COMPLETE] | 2D vector map canvas (`M` key) showing streets, landmarks, vehicle, objective, and player arrow |
+| Graphic & Audio Settings | [COMPLETE] | Real-time sliders/toggles: Exposure (0.8–2.4x), Shadows, Res Scale (50–100%), Fog, Volume, Sens, Invert Y |
 | Audio & Sound Synthesizer | [COMPLETE] | Web Audio API procedural synthesis with zero missing asset latency |
-| Persistence & Save/Load | [COMPLETE] | LocalStorage/IndexedDB state persistence with auto-save toast |
+| Persistence & Save/Load | [COMPLETE] | Multi-slot local persistence (Autosave, Slot 1–3) with manual save/load, mission names & timestamps |
 
 ---
 
@@ -163,14 +166,43 @@
   - Automated browser subagent playtest verified vehicle forward acceleration with W, illuminated world, glowing taillights, and narration speech/subtitles.
   - Production build passed clean (`npm run build`).
 
+### 2026-09-12 (Session 6)
+- **Pause Menu & System Hub (`src/ui/PauseMenu.ts`):**
+  - Integrated full console-grade pause menu accessible via `ESC`, `KeyP`, `KeyM`, `F1`, or the top-right HUD `MENU [ESC]` button.
+  - Pauses physics and game world loop while keeping UI fully interactive and unlocking pointer lock.
+- **2D Tactical World Map & GPS (`M` key / Map Tab):**
+  - High-definition 2D canvas map rendering Vespera City waterway (`Vespera Sound`), district boundaries (*Eastline, Southside, Old Harbor Pier 19, Central Vesper*), multi-lane avenue network with centerlines.
+  - Interactive tactical POI icons: Lena's Apartment (`128 Eastline`), Adrian's Auto Repair, Pier 19 Warehouse 19, Southside Diner, Parked Vehicle (`Vesper Sedan`), pulsing gold active Mission Objective waypoint, and rotating Cyan GPS player heading arrow.
+  - Live coordinates telemetry bar: `GPS [X, Z] | HEADING: ° | DISTRICT`.
+- **In-Game Graphic Settings:**
+  - Real-time Post-Processing Exposure slider (`0.8x` to `2.4x`, default `1.45x`).
+  - Real-Time Dynamic Shadows toggle switch (enables/disables PCF soft shadow maps).
+  - Render Resolution Scale dropdown (`100% Native Crisp`, `75% Balanced`, `50% Performance`).
+  - Atmospheric Fog Density slider (`0.0005` to `0.0060`, default `0.0022`).
+- **In-Game Audio & Game Settings:**
+  - Master Volume slider (`0%` to `100%`) hooked directly to `AudioManager.setMasterVolume()`.
+  - Voice Narration & Dialogue toggle switch (`NarrationManager.setEnabled()`).
+  - Mouse Look Sensitivity slider (`0.4x` to `2.5x`, default `1.0x`) scaling `ThirdPersonCamera`.
+  - Invert Mouse Y-Axis pitch toggle switch.
+- **Multi-Slot Save / Load System (`src/core/SaveSystem.ts`):**
+  - Multi-slot local persistence: `Autosave` checkpoint card + `Manual Slot 1`, `Manual Slot 2`, `Manual Slot 3`.
+  - Displays slot status, active mission title, player cash, health percentage, and formatted date/time stamps.
+  - Working `SAVE` and `LOAD` actions verified in automated browser playtest.
+- **Mission Log & Controls Reference:**
+  - Active operation briefing card, objective timeline with completed checkboxes, and dossier archive.
+  - Full keyboard & mouse controls grid.
+
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
-- **Act I is 100% complete!** All 4 vertical slice missions (M01 "Home Again", M02 "Old Debts", M03 "The Harbor", and M04 "Cold Storage") are fully implemented, verified, and chained.
-- Vehicle physics, forward steering/acceleration, atmospheric lighting, and voice narration systems are verified and active.
-- Next development chunk is **Act II — The Money Trail (Starting Mission M05 "The Journalist")**:
-  - Meeting investigative journalist **Mara Vale** at Southside Diner.
-  - Exchanging intelligence on Lena's disappearance and decrypting the drive.
-  - Infiltrating the Meridian Properties corporate office in Central Vesper.
-  - Photographing property acquisition documents.
-- Police Pursuit AI (`src/police/PoliceAI.ts`) and Cruiser response mechanics.
+- **All core infrastructure systems are 100% complete:**
+  - Heads-Up Display (HUD) with minimap, speedometer, vitals, cash, clock, wanted stars, crosshair, and narration bar.
+  - Pause Menu & System Hub with Tactical Map, Graphic Settings, Audio/Game Settings, and Multi-Slot Save/Load.
+  - Vehicle physics and forward driving direction verified.
+  - Act I (Missions M01, M02, M03, M04) verified start-to-finish.
+- **Next Task:**
+  - Proceed directly to **Act II — The Money Trail (Mission M05 "The Journalist")**:
+    - Build Southside Diner exterior/interior and spawn investigative journalist **Mara Vale**.
+    - Dialogue exchange examining Lena's stolen notebook and decrypting the Pier 19 military drive.
+    - Infiltration of Meridian Properties corporate office in Central Vesper.
+    - Police pursuit cruiser AI (`src/police/PoliceAI.ts`).

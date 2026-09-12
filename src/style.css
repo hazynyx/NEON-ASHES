@@ -935,6 +935,528 @@ kbd {
   font-style: italic;
 }
 
+/* Top status bar MENU button */
+.pause-btn {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pause-btn:hover {
+  background-color: var(--accent);
+  color: #0b0d0f;
+  border-color: var(--accent);
+}
+
+/* Pause Menu / System Hub Overlay */
+.pause-menu-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(7, 9, 11, 0.94);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pause-menu-container {
+  width: 100%;
+  max-width: 1120px;
+  height: 90vh;
+  max-height: 740px;
+  background-color: #0b0d0f;
+  border: 1px solid #30353a;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Pause Header */
+.pause-menu-header {
+  height: 64px;
+  background-color: #15181b;
+  border-bottom: 1px solid #30353a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 20px;
+}
+
+.pause-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pause-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pause-sub {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+
+.pause-tabs-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.pause-tab {
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pause-tab:hover {
+  color: var(--text-primary);
+  background-color: #1c2024;
+}
+
+.pause-tab.active {
+  background-color: #1c2024;
+  border: 1px solid #40464d;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+.pause-header-right {
+  display: flex;
+  gap: 10px;
+}
+
+.small-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+/* Pause Menu Body */
+.pause-menu-body {
+  flex: 1;
+  background-color: #0b0d0f;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.pause-tab-content {
+  display: none;
+  height: 100%;
+}
+
+.pause-tab-content.active {
+  display: block;
+}
+
+/* Tab 1: Tactical Map */
+.map-view-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+}
+
+.map-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #15181b;
+  border: 1px solid #30353a;
+  padding: 8px 16px;
+}
+
+.map-coords {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.map-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.dot-player { background-color: #06b6d4; }
+.dot-obj { background-color: #e58e26; }
+.dot-car { background-color: #60a5fa; }
+.dot-apt { background-color: #38bdf8; }
+.dot-garage { background-color: #fb923c; }
+.dot-pier { background-color: #a855f7; }
+.dot-diner { background-color: #eab308; }
+
+.map-canvas-container {
+  flex: 1;
+  background-color: #0a0e14;
+  border: 1px solid #30353a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#world-map-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Tab 2: Mission Log */
+.mission-log-container {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  height: 100%;
+}
+
+.log-heading {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.log-card {
+  background-color: #15181b;
+  border: 1px solid #30353a;
+  padding: 20px;
+}
+
+.log-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.log-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.log-subheading {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.log-obj-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.log-obj-list li {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-left: 3px solid #30353a;
+  background-color: #1c2024;
+}
+
+.log-obj-list li.log-obj-active {
+  border-left-color: var(--accent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.log-obj-list li.log-obj-done {
+  border-left-color: var(--success);
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.log-archive-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-archive-list li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  background-color: #15181b;
+  border: 1px solid #30353a;
+  padding: 12px 16px;
+}
+
+/* Tabs 3 & 4: Settings Grid */
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 800px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #15181b;
+  border: 1px solid #30353a;
+  padding: 16px 20px;
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-name {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+.setting-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.setting-control input[type="range"] {
+  width: 180px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.setting-val {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  width: 55px;
+  text-align: right;
+}
+
+.settings-select {
+  background-color: #1c2024;
+  border: 1px solid #30353a;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+/* Custom Switch Toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #30353a;
+  transition: 0.2s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #f2f2f0;
+  transition: 0.2s;
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+  background-color: #0b0d0f;
+}
+
+/* Tab 5: Save / Load System */
+.save-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.save-slot-card {
+  background-color: #15181b;
+  border: 1px solid #30353a;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 180px;
+}
+
+.autosave-card {
+  border-left: 3px solid var(--accent);
+}
+
+.slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.slot-header h4 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.slot-type-badge {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.slot-details {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.slot-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.slot-time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.slot-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Tab 6: Controls Guide */
+.controls-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.ctrl-col {
+  background-color: #15181b;
+  border: 1px solid #30353a;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ctrl-heading {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid #20262e;
+  padding-bottom: 8px;
+}
+
+.ctrl-row kbd {
+  background-color: #22272e;
+  border: 1px solid #3e444b;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-right: 4px;
+}
+
 /* Utility classes */
 .hidden {
   display: none !important;

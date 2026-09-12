@@ -30,6 +30,19 @@ export class EngineRenderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   }
 
+  public setExposure(val: number): void {
+    this.renderer.toneMappingExposure = Math.max(0.5, Math.min(3.0, val));
+  }
+
+  public setShadows(enabled: boolean): void {
+    this.renderer.shadowMap.enabled = enabled;
+  }
+
+  public setResolutionScale(scale: number): void {
+    const dpr = Math.min(window.devicePixelRatio, 2) * scale;
+    this.renderer.setPixelRatio(Math.max(0.5, dpr));
+  }
+
   public render(scene: THREE.Scene, camera: THREE.Camera): void {
     this.renderer.render(scene, camera);
   }

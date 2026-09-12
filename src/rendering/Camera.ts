@@ -26,6 +26,10 @@ export class ThirdPersonCamera {
   public isAiming: boolean = false;
   public isVehicleMode: boolean = false;
 
+  // Settings
+  public sensitivityMultiplier: number = 1.0;
+  public invertY: boolean = false;
+
   constructor(fov: number = 65, aspect: number = window.innerWidth / window.innerHeight) {
     this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
     this.camera.position.set(0, 3, 5);
@@ -36,9 +40,11 @@ export class ThirdPersonCamera {
     });
   }
 
-  public handleMouseLook(deltaX: number, deltaY: number, sensitivity: number = 0.0022): void {
-    this.yaw -= deltaX * sensitivity;
-    this.pitch += deltaY * sensitivity;
+  public handleMouseLook(deltaX: number, deltaY: number, baseSensitivity: number = 0.0022): void {
+    const sens = baseSensitivity * this.sensitivityMultiplier;
+    this.yaw -= deltaX * sens;
+    const ySign = this.invertY ? -1 : 1;
+    this.pitch += deltaY * sens * ySign;
 
     // Clamp pitch
     const maxPitch = Math.PI / 2.3; // ~78 deg

@@ -25,18 +25,34 @@ export interface SaveData {
   };
 }
 
-export class SaveSystem {
-  private static STORAGE_KEY = 'NEON_ASHES_SAVE_DATA';
+export interface SaveSlotData extends SaveData {
+  slotId: string;
+  slotName: string;
+  missionName: string;
+}
 
-  public static saveGame(player: Player, missionMgr: MissionManager, lighting: CityLighting): boolean {
+export class SaveSystem {
+  private static STORAGE_PREFIX = 'NEON_ASHES_SAVE_';
+
+  public static saveGame(
+    player: Player,
+    missionMgr: MissionManager,
+    lighting: CityLighting,
+    slotId: string = 'autosave',
+    slotName: string = 'Autosave'
+  ): boolean {
     try {
-      const data: SaveData = {
+      const activeMissionTitle = missionMgr.currentMission ? missionMgr.currentMission.title : 'Free Roam';
+      const data: SaveSlotData = {
         version: 1,
         timestamp: Date.now(),
+        slotId,
+        slotName,
+        missionName: activeMissionTitle,
         player: {
-          x: player.position.x,
-          y: player.position.y,
-          z: player.position.z,
+          x: Math.round(player.position.x * 10) / 10,
+          y: Math.round(player.position.y * 10) / 10,
+          z: Math.round(player.position.z * 10) / 10,
           health: player.health,
           cash: player.cash,
           ammoClip: player.ammoClip,
@@ -52,8 +68,8 @@ export class SaveSystem {
         }
       };
 
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
-      this.showSaveToast();
+      localStorage.setItem(this.STORAGE_PREFIX + slotId, JSON.stringify(data));
+      this.showSaveToast(slotName);
       return true;
     } catch (e) {
       console.error('Failed to save game data:', e);
@@ -61,12 +77,17 @@ export class SaveSystem {
     }
   }
 
-  public static loadGame(player: Player, missionMgr: MissionManager, lighting: CityLighting): boolean {
+  public static loadGame(
+    player: Player,
+    missionMgr: MissionManager,
+    lighting: CityLighting,
+    slotId: string = 'autosave'
+  ): boolean {
     try {
-      const raw = localStorage.getItem(this.STORAGE_KEY);
+      const raw = localStorage.getItem(this.STORAGE_PREFIX + slotId);
       if (!raw) return false;
 
-      const data: SaveData = JSON.parse(raw);
+      const data: SaveSlotData = JSON.parse(raw);
       if (!data || !data.player) return false;
 
       player.position.set(data.player.x, data.player.y, data.player.z);
@@ -85,6 +106,7 @@ export class SaveSystem {
         lighting.timeOfDay = data.world.timeOfDay;
       }
 
+      this.showNotification('GAME LOADED', `${data.slotName} restored successfully`);
       return true;
     } catch (e) {
       console.error('Failed to load game data:', e);
@@ -92,13 +114,40 @@ export class SaveSystem {
     }
   }
 
-  public static hasSave(): boolean {
-    return !!localStorage.getItem(this.STORAGE_KEY);
+  public static getSlotData(slotId: string): SaveSlotData | null {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_PREFIX + slotId);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
 
-  private static showSaveToast(): void {
+  public static hasSave(slotId: string = 'autosave'): boolean {
+    return !!localStorage.getItem(this.STORAGE_PREFIX + slotId);
+  }
+
+  public static getAllSlots(): Record<string, SaveSlotData | null> {
+    return {
+      autosave: this.getSlotData('autosave'),
+      slot1: this.getSlotData('slot1'),
+      slot2: this.getSlotData('slot2'),
+      slot3: this.getSlotData('slot3')
+    };
+  }
+
+  private static showSaveToast(slotName: string): void {
+    this.showNotification('GAME SAVED', `${slotName} checkpoint stored`);
+  }
+
+  private static showNotification(title: string, body: string): void {
     const toast = document.getElementById('notification-banner');
-    if (toast) {
+    const titleEl = document.getElementById('notif-title');
+    const bodyEl = document.getElementById('notif-body');
+    if (toast && titleEl && bodyEl) {
+      titleEl.innerText = title;
+      bodyEl.innerText = body;
       toast.classList.remove('hidden');
       setTimeout(() => {
         toast.classList.add('hidden');
