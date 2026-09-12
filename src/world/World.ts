@@ -4,7 +4,7 @@ export interface WorldPOI {
   id: string;
   name: string;
   position: THREE.Vector3;
-  type: 'apartment' | 'garage' | 'docks' | 'store';
+  type: 'apartment' | 'garage' | 'docks' | 'store' | 'diner' | 'office';
 }
 
 export class World {
@@ -23,6 +23,11 @@ export class World {
   public warehouseEntrancePos: THREE.Vector3 = new THREE.Vector3(85, 0, -156);
   public warehouseDeskPos: THREE.Vector3 = new THREE.Vector3(92, 0, -178);
   public warehouseLockerPos: THREE.Vector3 = new THREE.Vector3(78, 0, -180);
+
+  // Southside Diner (Mara Vale meeting location) & Meridian Properties HQ
+  public southsideDinerPos: THREE.Vector3 = new THREE.Vector3(50, 0, 46);
+  public meridianOfficePos: THREE.Vector3 = new THREE.Vector3(0, 0, -160);
+  public meridianDeskPos: THREE.Vector3 = new THREE.Vector3(0, 0, -164);
 
   // Warehouse 19 Shutter & Interior
   public warehouseShutterMesh!: THREE.Mesh;
@@ -65,7 +70,13 @@ export class World {
     // 6. Build Old Harbor & Pier 19
     this.createOldHarborPier();
 
-    // 7. Add Street Furniture & Props (Streetlights, Dumpsters, Hydrants)
+    // 7. Build Southside Diner (Mara Vale Story Location)
+    this.createSouthsideDiner();
+
+    // 8. Build Meridian Properties Corporate Office (Infiltration Location)
+    this.createMeridianOffice();
+
+    // 9. Add Street Furniture & Props (Streetlights, Dumpsters, Hydrants)
     this.createStreetProps();
   }
 
@@ -598,6 +609,173 @@ export class World {
       name: 'Pier 19 Old Harbor',
       position: new THREE.Vector3(dockPos.x, 0, dockPos.z),
       type: 'docks'
+    });
+  }
+
+  private createSouthsideDiner(): void {
+    const pos = this.southsideDinerPos;
+    const width = 22;
+    const depth = 16;
+    const height = 5.5;
+
+    // Main Diner Structure (Retro Brick & Stainless Steel)
+    const dMat = new THREE.MeshStandardMaterial({
+      color: 0x451a03, // Dark red-brown brick
+      roughness: 0.8,
+      metalness: 0.2
+    });
+
+    const dinerMesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), dMat);
+    dinerMesh.position.set(pos.x, height / 2, pos.z);
+    dinerMesh.castShadow = true;
+    dinerMesh.receiveShadow = true;
+    this.scene.add(dinerMesh);
+
+    // Collider
+    const bbox = new THREE.Box3().setFromObject(dinerMesh);
+    this.colliders.push(bbox);
+    this.buildingRects.push({ x: pos.x, z: pos.z, w: width, d: depth });
+
+    // Stainless Steel Roof Trim
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: 0xd1d5db,
+      metalness: 0.85,
+      roughness: 0.25
+    });
+    const roofTrim = new THREE.Mesh(new THREE.BoxGeometry(width + 0.8, 0.45, depth + 0.8), trimMat);
+    roofTrim.position.set(pos.x, height + 0.2, pos.z);
+    this.scene.add(roofTrim);
+
+    // Warm Illuminated Windows
+    const winMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a,
+      emissive: 0xfef08a,
+      emissiveIntensity: 0.9,
+      roughness: 0.2
+    });
+    [-6, 0, 6].forEach(dx => {
+      const win = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.2, 0.2), winMat);
+      win.position.set(pos.x + dx, 2.5, pos.z - depth / 2 - 0.1);
+      this.scene.add(win);
+    });
+
+    // Neon Roof Sign: "SOUTHSIDE DINER // 24H"
+    const signGeo = new THREE.BoxGeometry(10, 1.2, 0.3);
+    const signMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b }); // Amber neon
+    const sign = new THREE.Mesh(signGeo, signMat);
+    sign.position.set(pos.x, height + 1.2, pos.z - depth / 2 + 0.5);
+    this.scene.add(sign);
+
+    // Outdoor Patio Awning & Tables (Where Mara Vale meets Kaleb)
+    const awningMat = new THREE.MeshStandardMaterial({ color: 0x991b1b }); // Burgundy red awning
+    const awning = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 5), awningMat);
+    awning.position.set(pos.x, 3.6, pos.z - depth / 2 - 3.2);
+    this.scene.add(awning);
+
+    const tableMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6 });
+    [-3, 3].forEach(tx => {
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.9, 12), tableMat);
+      table.position.set(pos.x + tx, 0.45, pos.z - depth / 2 - 3.2);
+      this.scene.add(table);
+    });
+
+    // Warm Patio Lighting
+    const patioLight = new THREE.PointLight(0xf59e0b, 2.8, 16);
+    patioLight.position.set(pos.x, 3.2, pos.z - depth / 2 - 3.2);
+    this.scene.add(patioLight);
+
+    this.pois.push({
+      id: 'southside_diner',
+      name: 'Southside Diner (Mara Vale)',
+      position: new THREE.Vector3(pos.x, 0, pos.z - depth / 2 - 3.2),
+      type: 'diner'
+    });
+  }
+
+  private createMeridianOffice(): void {
+    const pos = this.meridianOfficePos;
+    const width = 36;
+    const depth = 26;
+    const height = 28;
+
+    // Corporate Tower Base (Polished Dark Slate & Glass)
+    const oMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.3,
+      metalness: 0.7
+    });
+
+    const towerMesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), oMat);
+    towerMesh.position.set(pos.x, height / 2, pos.z);
+    towerMesh.castShadow = true;
+    towerMesh.receiveShadow = true;
+    this.scene.add(towerMesh);
+
+    // Collider
+    const bbox = new THREE.Box3().setFromObject(towerMesh);
+    this.colliders.push(bbox);
+    this.buildingRects.push({ x: pos.x, z: pos.z, w: width, d: depth });
+
+    // Office Floor Windows (Cyan / Corporate Blue Glow)
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.6,
+      roughness: 0.1
+    });
+
+    for (let floor = 1; floor < 5; floor++) {
+      [-12, -4, 4, 12].forEach(wx => {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.8, 0.2), glassMat);
+        win.position.set(pos.x + wx, floor * 5.2 + 2, pos.z + depth / 2 + 0.12);
+        this.scene.add(win);
+      });
+    }
+
+    // Entrance Canopy & Cyan Neon Sign: "MERIDIAN PROPERTIES"
+    const canopyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(16, 0.5, 6), canopyMat);
+    canopy.position.set(pos.x, 4.5, pos.z + depth / 2 + 3);
+    this.scene.add(canopy);
+
+    const signGeo = new THREE.BoxGeometry(14, 1.0, 0.2);
+    const signMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 }); // Cyan neon
+    const sign = new THREE.Mesh(signGeo, signMat);
+    sign.position.set(pos.x, 5.4, pos.z + depth / 2 + 0.2);
+    this.scene.add(sign);
+
+    // Front Lobby Archival Desk & Terminal (Evidence Collection Target)
+    const deskMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.4 });
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 1.8), deskMat);
+    desk.position.set(this.meridianDeskPos.x, 0.55, this.meridianDeskPos.z);
+    this.scene.add(desk);
+
+    // File Archive Cabinet
+    const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7 });
+    const cabinet = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.6, 1.4), cabinetMat);
+    cabinet.position.set(this.meridianDeskPos.x + 2.8, 1.3, this.meridianDeskPos.z);
+    this.scene.add(cabinet);
+
+    // Terminal Screen (Cyan Glow)
+    const screenMat = new THREE.MeshStandardMaterial({
+      color: 0x06b6d4,
+      emissive: 0x06b6d4,
+      emissiveIntensity: 2.2
+    });
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.1), screenMat);
+    screen.position.set(this.meridianDeskPos.x, 1.4, this.meridianDeskPos.z - 0.2);
+    this.scene.add(screen);
+
+    // Entrance illumination
+    const officeLight = new THREE.PointLight(0x38bdf8, 3.0, 18);
+    officeLight.position.set(pos.x, 4.0, pos.z + depth / 2 + 2);
+    this.scene.add(officeLight);
+
+    this.pois.push({
+      id: 'meridian_properties',
+      name: 'Meridian Properties Corporate Office',
+      position: new THREE.Vector3(pos.x, 0, pos.z + depth / 2 + 2),
+      type: 'office'
     });
   }
 

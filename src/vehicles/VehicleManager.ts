@@ -81,6 +81,97 @@ export class VehicleManager {
       v.heading = heading;
       this.vehicles.push(v);
     });
+
+    // 3. Dynamic Ambient Traffic Vehicles
+    this.spawnTrafficVehicles();
+  }
+
+  private trafficCars: Array<{
+    vehicle: Vehicle;
+    lane: 'north_eastline' | 'south_eastline' | 'east_cross' | 'west_cross';
+    cruiseSpeed: number;
+  }> = [];
+
+  private spawnTrafficVehicles(): void {
+    const trafficConfigs = [
+      {
+        cfg: {
+          id: 'traffic_sedan_1',
+          name: 'VESPER CAB',
+          maxSpeed: 24,
+          acceleration: 12,
+          reverseSpeed: 7,
+          braking: 20,
+          turnSpeed: 1.8,
+          color: 0xd97706 // Amber Yellow Cab
+        },
+        pos: new THREE.Vector3(3.5, 0, 80),
+        heading: 0, // Northbound
+        lane: 'north_eastline' as const,
+        cruiseSpeed: 11
+      },
+      {
+        cfg: {
+          id: 'traffic_coupe_2',
+          name: 'METRO COUPE',
+          maxSpeed: 26,
+          acceleration: 14,
+          reverseSpeed: 8,
+          braking: 22,
+          turnSpeed: 1.9,
+          color: 0x334155 // Slate Gray
+        },
+        pos: new THREE.Vector3(-3.5, 0, -100),
+        heading: Math.PI, // Southbound
+        lane: 'south_eastline' as const,
+        cruiseSpeed: 12
+      },
+      {
+        cfg: {
+          id: 'traffic_taxi_3',
+          name: 'HARBOR SEDAN',
+          maxSpeed: 25,
+          acceleration: 13,
+          reverseSpeed: 7,
+          braking: 20,
+          turnSpeed: 1.8,
+          color: 0x047857 // Forest Green
+        },
+        pos: new THREE.Vector3(-60, 0, 30),
+        heading: -Math.PI / 2, // Eastbound
+        lane: 'east_cross' as const,
+        cruiseSpeed: 11
+      },
+      {
+        cfg: {
+          id: 'traffic_wagon_4',
+          name: 'CARGO COUPE',
+          maxSpeed: 24,
+          acceleration: 12,
+          reverseSpeed: 7,
+          braking: 20,
+          turnSpeed: 1.8,
+          color: 0x475569 // Dark Silver
+        },
+        pos: new THREE.Vector3(60, 0, -45),
+        heading: Math.PI / 2, // Westbound
+        lane: 'west_cross' as const,
+        cruiseSpeed: 10
+      }
+    ];
+
+    trafficConfigs.forEach(tc => {
+      const v = new Vehicle(this.scene, tc.cfg, tc.pos, this.audio);
+      v.heading = tc.heading;
+      v.isAIControlled = true;
+      v.targetSpeed = tc.cruiseSpeed;
+      this.vehicles.push(v);
+      this.trafficCars.push({
+        vehicle: v,
+        lane: tc.lane,
+        cruiseSpeed: tc.cruiseSpeed
+      });
+    });
   }
 
   public update(
@@ -89,7 +180,10 @@ export class VehicleManager {
     input: InputManager,
     worldColliders: THREE.Box3[]
   ): void {
-    // Check closest vehicle to player when on foot
+    // 1. Update Traffic AI for ambient vehicles
+    this.updateTrafficAI(deltaTime, player);
+
+    // 2. Check closest vehicle to player when on foot
     if (!this.activeVehicle) {
       this.nearbyVehicle = null;
       let closestDist = 3.5; // Interaction distance (3.5m)
@@ -123,6 +217,59 @@ export class VehicleManager {
     if (this.activeVehicle) {
       player.position.copy(this.activeVehicle.position);
     }
+  }
+
+  private updateTrafficAI(deltaTime: number, player: Player): void {
+    this.trafficCars.forEach(tc => {
+      const v = tc.vehicle;
+      if (v === this.activeVehicle) return; // Player is driving this car
+
+      // Check distance to player or player's active car
+      const playerPos = player.position;
+      const distToPlayer = v.position.distanceTo(playerPos);
+
+      // Check if player or obstacle is directly in path
+      let shouldStop = false;
+      if (distToPlayer < 12) {
+        // Dot product to check if player is ahead
+        const forwardX = -Math.sin(v.heading);
+        const forwardZ = -Math.cos(v.heading);
+        const toPlayerX = playerPos.x - v.position.x;
+        const toPlayerZ = playerPos.z - v.position.z;
+        const dot = forwardX * toPlayerX + forwardZ * toPlayerZ;
+        if (dot > 0) {
+          shouldStop = true; // Player is in front of the vehicle
+        }
+      }
+
+      // Proximity to other cars
+      this.vehicles.forEach(other => {
+        if (other !== v) {
+          const d = v.position.distanceTo(other.position);
+          if (d < 10) {
+            const forwardX = -Math.sin(v.heading);
+            const forwardZ = -Math.cos(v.heading);
+            const toOtherX = other.position.x - v.position.x;
+            const toOtherZ = other.position.z - v.position.z;
+            const dot = forwardX * toOtherX + forwardZ * toOtherZ;
+            if (dot > 0) shouldStop = true;
+          }
+        }
+      });
+
+      v.targetSpeed = shouldStop ? 0 : tc.cruiseSpeed;
+
+      // Loop boundaries when reaching road ends
+      if (tc.lane === 'north_eastline' && v.position.z < -160) {
+        v.position.z = 135;
+      } else if (tc.lane === 'south_eastline' && v.position.z > 135) {
+        v.position.z = -160;
+      } else if (tc.lane === 'east_cross' && v.position.x > 95) {
+        v.position.x = -75;
+      } else if (tc.lane === 'west_cross' && v.position.x < -75) {
+        v.position.x = 95;
+      }
+    });
   }
 
   public enterVehicle(player: Player, vehicle: Vehicle): void {

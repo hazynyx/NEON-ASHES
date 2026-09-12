@@ -363,7 +363,8 @@ export class PauseMenu {
       { name: "Lena's Apartment (128 Eastline)", x: -25, z: 15, color: '#38bdf8', icon: '🏠' },
       { name: "Adrian's Auto Repair", x: 35, z: -45, color: '#fb923c', icon: '🔧' },
       { name: "Pier 19 Warehouse 19", x: -130, z: -75, color: '#a855f7', icon: '⚓' },
-      { name: "Southside Diner (Mara Vale)", x: 50, z: 60, color: '#eab308', icon: '☕' }
+      { name: "Southside Diner (Mara Vale)", x: 50, z: 60, color: '#eab308', icon: '☕' },
+      { name: "Meridian Properties HQ", x: 0, z: -160, color: '#06b6d4', icon: '🏢' }
     ];
 
     landmarks.forEach(lm => {
@@ -402,10 +403,25 @@ export class PauseMenu {
       ctx.fillText(`VEHICLE (${veh.config.name})`, vp.x + 9, vp.y + 3);
     }
 
-    // Active Objective Waypoint (Pulsing Amber)
+    // Active Objective Waypoint & GPS Route
+    const playerPos = this.player.position;
+    const pp = toMap(playerPos.x, playerPos.z);
     const obj = this.missionMgr.getCurrentObjective();
     if (obj && obj.targetPosition) {
       const op = toMap(obj.targetPosition.x, obj.targetPosition.z);
+
+      // GPS Navigation Route Line
+      ctx.strokeStyle = '#e58e26';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(pp.x, pp.y);
+      // Route via highway intersection for aesthetic city street nav
+      ctx.lineTo(op.x, pp.y);
+      ctx.lineTo(op.x, op.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
       // Pulsing gold circle
       ctx.beginPath();
       ctx.arc(op.x, op.y, 14, 0, Math.PI * 2);
@@ -420,12 +436,10 @@ export class PauseMenu {
 
       ctx.fillStyle = '#fbbf24';
       ctx.font = '700 11px "Chakra Petch", sans-serif';
-      ctx.fillText(`OBJ: ${obj.description}`, op.x + 16, op.y + 4);
+      ctx.fillText(`GPS DESTINATION: ${obj.description}`, op.x + 16, op.y + 4);
     }
 
     // Player GPS Location Arrow
-    const playerPos = this.player.position;
-    const pp = toMap(playerPos.x, playerPos.z);
     const heading = this.player.heading;
 
     ctx.save();

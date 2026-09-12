@@ -11,25 +11,26 @@
 ---
 
 ## 2. CURRENT DEVELOPMENT STATUS
-- **Overall Completion:** 33% (Phase 0 Foundation, Phase 1 Prototype, and all 4 Act I Vertical Slice Missions M01, M02, M03, M04 Complete!)
-- **Current Milestone:** Phase 3 / Act II: The Money Trail (Starting Mission M05 "The Journalist" & Police Pursuit AI)
-- **Current Focus:** Mission M05 ("The Journalist") implementation: meeting investigative journalist Mara Vale at the Southside diner, piecing together Lena's notes, infiltrating the Meridian Properties redevelopment office, photographing corporate zoning records, and evading police surveillance.
+- **Overall Completion:** 42% (Phase 0 Foundation, Phase 1 Prototype, Act I Missions M01-M04, and Act II Mission M05 "The Journalist" Complete!)
+- **Current Milestone:** Phase 3 / Act II: The Money Trail (M05 Complete, preparing Mission M06 "The City Hall Connection" & Police Pursuit AI)
+- **Current Focus:** Mission M06 implementation and Police Cruiser patrol/pursuit AI (`src/police/PoliceAI.ts`).
 - **Last Completed:**
-  - Mission M04 ("Cold Storage") implemented and verified start-to-finish in browser.
-  - Tactical 12G Shotgun weapon class: procedural sub-bass and pump-action audio synthesis (`AudioManager.ts`), 6-pellet spread raycasting with damage calculation, weapon switching keys (`1`: Pistol, `2`: Shotgun, `3`: Unarmed), and dynamic HUD weapon/ammo display.
-  - Pier 19 Warehouse 19 interior (`World.ts`): hollow walk-in warehouse, animated roll-up security shutter, office manifest desk and terminal screen, Cold Storage Locker 4B, refrigeration storage racks, and tactical cover.
-  - Evidence Modal extension: authentic Meridian Logistics Bill of Lading document linking Councilman Vance Albright directly to the Marrow Syndicate.
-  - Syndicate heavy guards ambush firefight (`EnemyAI.ts`), guard elimination, and harbor perimeter vehicle getaway.
-- **Currently Broken:** None. All systems tested and verified in browser.
+  - **Dynamic Traffic AI (`src/vehicles/VehicleManager.ts`):** Ambient civilian traffic navigating road lanes (Vesper Cab, Metro Coupe, Harbor Sedan, Cargo Wagon) with illuminated headlights, lane tracking, obstacle/proximity braking, and full carjacking/entry via `[E]`.
+  - **Ambient Pedestrian AI (`src/ai/NPCManager.ts`):** Sidewalk pedestrians patrolling city blocks with procedural walking speed, alternating leg swing animation, and reactive fleeing.
+  - **3D Destination Waypoint Beacon (`src/world/DestinationMarker.ts`):** 32m tall vertical illuminated light pillar (`0xe58e26`), concentric pulsing ground radar rings, hovering rotating diamond marker, and ground point light.
+  - **Real-Time GPS Route Navigation (`src/ui/HUD.ts` & `src/ui/PauseMenu.ts`):** Dashed amber breadcrumb route line dynamically plotted on both the in-game Minimap and the Fullscreen Tactical Map (`M` key) pointing directly to the active objective.
+  - **Act II Mission M05 ("The Journalist") (`src/missions/data/M05_TheJournalist.ts`):**
+    - Southside Diner with neon sign `SOUTHSIDE DINER // 24H` and outdoor covered patio.
+    - Story NPC **Mara Vale** with auburn hair and 6-part branching investigative dialogue.
+    - Meridian Properties corporate office with archival desk, filing cabinets, and cyan terminal screen.
+    - Evidence Modal: Confidential municipal redevelopment buyout accord signed by Councilman Vance Albright.
+    - Mission rewards: +$1,800 cash, decrypted audio journal tape, shotgun ammo.
+- **Currently Broken:** None. All systems verified in automated browser playtest.
 - **Next Tasks:**
-  1. Implement Mission M05 ("The Journalist"):
-     - Southside Diner location and Mara Vale story NPC.
-     - Dialogue tree sharing Lena's findings and the encrypted drive.
-     - Travel to Meridian Properties office in Central Vesper.
-     - Photograph suspicious property acquisition records.
+  1. Implement Mission M06 ("The City Hall Connection"):
+     - Albright's mayoral campaign gala surveillance and wiretap placement.
   2. Implement Police Pursuit AI (`src/police/PoliceAI.ts`):
-     - Police cruisers actively pursuing Kaleb upon reaching 2+ wanted stars.
-     - Line-of-sight radar evade mechanic.
+     - Police cruisers actively pursuing Kaleb upon reaching 2+ wanted stars with siren audio and roadblock tactics.
 
 ---
 
@@ -44,7 +45,7 @@
 | Player Movement & Physics | [COMPLETE] | Walk, jog, sprint with stamina drain, jump, crouch, collision sliding |
 | Vehicle Controller & Physics | [COMPLETE] | Vesper Sedan with steering, braking, speed readout in MPH, enter/exit [E] |
 | World & City District (Eastline & Harbor) | [COMPLETE] | Multi-lane avenues, lit window facades, Pier 19 docks, Warehouse 19, POIs |
-| NPC & Traffic AI | [COMPLETE] | Mrs. Gable, Jonah Reyes + reactive pedestrians fleeing gunfire |
+| NPC & Traffic AI | [COMPLETE] | Multi-lane civilian traffic with collision braking & carjacking + animated sidewalk pedestrians |
 | Combat & Enemy AI | [COMPLETE] | Marrow Syndicate enforcers, line-of-sight shooting, hit detection, flinch, death |
 | Weapons & Arsenal | [COMPLETE] | Service Pistol (12/clip) + 12G Tactical Shotgun (6/tube, spread pellets), hotkeys |
 | Police & Wanted System | [PARTIAL] | UI stars active upon crimes; patrol cruiser vehicle spawned |
@@ -53,7 +54,7 @@
 | Mission M02 — Old Debts | [COMPLETE] | Playable start-to-finish: Jonah dialogue, safe cracking, syndicate shootout, escape |
 | Mission M03 — The Harbor | [COMPLETE] | Playable start-to-finish: Pier 19, surveillance stakeout, courier pursuit, key retrieval |
 | Mission M04 — Cold Storage | [COMPLETE] | Playable start-to-finish: Warehouse 19 interior, manifest inspection, drive pickup, ambush, escape |
-| Mission M05 — The Journalist | [NOT STARTED] | Next target per Act II storyline |
+| Mission M05 — The Journalist | [COMPLETE] | Playable start-to-finish: Southside Diner, Mara Vale dialogue, Meridian office infiltration, evidence |
 | UI & HUD (No Glassmorphism) | [COMPLETE] | Solid dark surfaces (`#0B0D0F`, `#15181B`, `#E58E26`), minimap, speedo, modals |
 | Pause Menu & System Hub | [COMPLETE] | Integrated hub (`ESC`/`P`) with tabs for Map, Log, Graphics, Settings, Save/Load, Controls |
 | Tactical World Map & GPS | [COMPLETE] | 2D vector map canvas (`M` key) showing streets, landmarks, vehicle, objective, and player arrow |
@@ -96,23 +97,25 @@
   - Eliminate arriving Syndicate heavy guards [COMPLETE]
   - Escape Pier 19 perimeter with evidence [COMPLETE]
   - Complete mission & receive $1500 + Military Drive + Shotgun ammo [COMPLETE]
-- **M05 — The Journalist:** [NOT STARTED] — Next target.
-  - Travel to Southside Diner [NOT STARTED]
-  - Meet investigative reporter Mara Vale [NOT STARTED]
-  - Decrypt drive contents and examine Lena's notes [NOT STARTED]
-  - Infiltrate Meridian Properties property development office [NOT STARTED]
-  - Photograph suspicious acquisition files [NOT STARTED]
-  - Evade city security patrol [NOT STARTED]
-- **M06–M30:** [NOT STARTED]
+- **M05 — The Journalist:** [COMPLETE]
+  - Travel to Southside Diner in Southside Industrial [COMPLETE]
+  - Meet investigative reporter Mara Vale on the diner patio [COMPLETE]
+  - Branching dialogue regarding Lena's investigation and decrypting the drive [COMPLETE]
+  - Infiltrate Meridian Properties corporate development office [COMPLETE]
+  - Photograph confidential municipal buyout accord linking Albright to Syndicate [COMPLETE]
+  - Return to Southside Diner and debrief Mara Vale [COMPLETE]
+  - Complete mission & receive $1,800 + Decrypted Audio Journal Tape [COMPLETE]
+- **M06 — The City Hall Connection:** [NOT STARTED] — Next target.
+- **M07–M30:** [NOT STARTED]
 
 ---
 
 ## 5. WORLD IMPLEMENTATION STATUS
 - **Vespera City Districts:**
-  - **Eastline / Southside (District 1):** [COMPLETE - CORE] Contains Lena's apartment building (128 Eastline), Adrian's old auto repair garage, street network, props, dumpsters, streetlights, and building colliders.
-  - **Old Harbor:** [IN PROGRESS] Waterfront piers and warehouses being established for M03.
-  - **Central Vesper / Downtown:** [NOT STARTED]
-  - **Redwater / Meridian / North Heights / Silver Coast:** [NOT STARTED]
+  - **Eastline / Southside (District 1):** [COMPLETE] Contains Lena's apartment building (128 Eastline), Adrian's old auto repair garage, Southside Diner (24h retro diner with neon and patio), multi-lane avenue network, sidewalks, streetlights, and traffic.
+  - **Old Harbor (District 2):** [COMPLETE] Waterfront gantry crane, shipping container stacks, Pier 19 Warehouse 19 with interior and roll-up shutter.
+  - **Central Vesper Corridor:** [IN PROGRESS] Meridian Properties corporate headquarters tower, canopy, archival desk, and terminals.
+  - **Redwater / North Heights / Silver Coast:** [NOT STARTED]
 
 ---
 

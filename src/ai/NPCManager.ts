@@ -113,11 +113,29 @@ export class NPC {
       return;
     }
 
-    // Gentle idle/patrol for ambient NPCs
-    this.animTimer += deltaTime * 2;
-    this.leftLeg.rotation.x *= 0.8;
-    this.rightLeg.rotation.x *= 0.8;
+    // Ambient Sidewalk Pedestrian Patrol
+    this.animTimer += deltaTime * 5.5;
+    const walkSpeed = 1.35; // ~3 mph walking speed
+    const forwardX = Math.sin(this.mesh.rotation.y) * walkSpeed * deltaTime;
+    const forwardZ = Math.cos(this.mesh.rotation.y) * walkSpeed * deltaTime;
+
+    this.position.x += forwardX;
+    this.position.z += forwardZ;
+    this.mesh.position.copy(this.position);
+
+    // Leg swinging animation
+    this.leftLeg.rotation.x = Math.sin(this.animTimer) * 0.45;
+    this.rightLeg.rotation.x = -Math.sin(this.animTimer) * 0.45;
+
+    // Turn around at patrol limits
+    this.patrolDistance += walkSpeed * deltaTime;
+    if (this.patrolDistance > 24.0) {
+      this.patrolDistance = 0;
+      this.mesh.rotation.y += Math.PI; // Turn around 180 degrees
+    }
   }
+
+  private patrolDistance: number = 0;
 
   public scare(fromPos: THREE.Vector3): void {
     if (this.data.isStoryNPC) return;
@@ -204,6 +222,42 @@ export class NPCManager {
     });
     this.npcs.push(jonahReyes);
 
+    // 3. Story NPC: Mara Vale at Southside Diner Patio
+    const maraVale = new NPC(this.scene, {
+      id: 'mara_vale',
+      name: 'Mara Vale',
+      isStoryNPC: true,
+      position: new THREE.Vector3(48, 0, 46), // On Southside Diner patio under awning
+      heading: -Math.PI / 3,
+      dialogue: [
+        {
+          speaker: 'MARA VALE',
+          text: "You're Kaleb Voss. Adrian's son. You carry yourself like him... cautious, calculating, and looking for answers."
+        },
+        {
+          speaker: 'KALEB',
+          text: "You're Mara Vale. The investigative journalist Lena trusted. What happened to my sister, Mara?"
+        },
+        {
+          speaker: 'MARA VALE',
+          text: "Lena uncovered a web of corruption. Meridian Properties isn't just redeveloping Eastline—they're executing violent forced evictions using Marrow Syndicate muscle, signed off by Councilman Vance Albright."
+        },
+        {
+          speaker: 'MARA VALE',
+          text: "Lena hid her evidence before vanishing. The crucial link is the secret acquisition agreement stored in Meridian's Central Vesper office."
+        },
+        {
+          speaker: 'MARA VALE',
+          text: "Infiltrate Meridian Properties in Central Vesper. Photograph their zoning buyout agreements from their ground-floor archive desk. Bring me the photos, and I'll unlock Lena's encrypted audio journal."
+        },
+        {
+          speaker: 'KALEB',
+          text: "Consider it done. Wait here."
+        }
+      ]
+    });
+    this.npcs.push(maraVale);
+
     // 3. Ambient Pedestrians around Eastline sidewalks
     const pedestrianSpawns = [
       { pos: new THREE.Vector3(38, 0, -15), heading: 0 },
@@ -228,14 +282,15 @@ export class NPCManager {
 
   public update(deltaTime: number, player: Player, input: InputManager): void {
     this.nearbyNPC = null;
-    let closestDist = 2.8;
+    let closestDist = 999;
 
     for (const npc of this.npcs) {
       npc.update(deltaTime);
 
       if (!player.isInVehicle) {
         const dist = player.position.distanceTo(npc.position);
-        if (dist < closestDist) {
+        const maxDist = npc.data.isStoryNPC ? 3.8 : 2.5;
+        if (dist < maxDist && dist < closestDist) {
           closestDist = dist;
           this.nearbyNPC = npc;
         }

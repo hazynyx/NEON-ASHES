@@ -300,11 +300,21 @@ export class HUD {
       ctx.fillRect(bx, bz, b.w * zoom, b.d * zoom);
     });
 
-    // Draw Mission Objective Waypoint
+    // Draw Mission Objective Waypoint & GPS Route
     const currentObj = missionMgr.getCurrentObjective();
     if (currentObj && currentObj.targetPosition) {
       const ox = (currentObj.targetPosition.x - playerPos.x) * zoom;
       const oz = (currentObj.targetPosition.z - playerPos.z) * zoom;
+
+      // Draw dashed GPS guidance line from player to waypoint
+      ctx.strokeStyle = '#e58e26';
+      ctx.lineWidth = 2.0;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(ox, oz);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       // Draw diamond waypoint
       ctx.fillStyle = '#e58e26'; // Amber mission icon
@@ -410,10 +420,10 @@ export class HUD {
 
   // Evidence Modal
   public showEvidence(
-    typeOrCb?: 'photo' | 'manifest' | (() => void),
+    typeOrCb?: 'photo' | 'manifest' | 'meridian_zoning' | (() => void),
     onContinue?: () => void
   ): void {
-    let type: 'photo' | 'manifest' = 'photo';
+    let type: 'photo' | 'manifest' | 'meridian_zoning' = 'photo';
     let cb = onContinue;
     if (typeof typeOrCb === 'function') {
       cb = typeOrCb;
@@ -422,7 +432,15 @@ export class HUD {
       type = typeOrCb;
     }
 
-    if (type === 'manifest') {
+    if (type === 'meridian_zoning') {
+      this.evidenceTitleEl.innerText = 'EVIDENCE COLLECTED: MERIDIAN ZONING BUYOUT AGREEMENT';
+      this.evidenceCaptionEl.innerHTML = `
+        <strong>Document:</strong> Meridian Properties Redevelopment Acquisition Contract &bull; <strong>Signatory:</strong> Councilman Vance Albright<br>
+        <em>Confidential municipal development agreement approving expedited eminent domain condemnation of Eastline residential blocks. Confirms direct transfer of condemned properties to Marrow Syndicate shell corporations with Albright's official seal.</em>
+      `;
+      this.renderMeridianZoningDocument();
+      this.continueMissionBtn.innerText = 'SECURE PHOTOGRAPHS & DELIVER TO MARA';
+    } else if (type === 'manifest') {
       this.evidenceTitleEl.innerText = 'EVIDENCE COLLECTED: MERIDIAN SHIPPING MANIFEST';
       this.evidenceCaptionEl.innerHTML = `
         <strong>Document:</strong> Meridian Logistics Pier 19 Bill of Lading &bull; <strong>Consignee:</strong> Marrow Syndicate<br>
@@ -503,6 +521,80 @@ export class HUD {
     ctx.fillStyle = '#ef4444';
     ctx.font = 'bold 10px monospace';
     ctx.fillText('RESTRICTED // MARROW SYNDICATE', 216, 222);
+  }
+
+  private renderMeridianZoningDocument(): void {
+    const ctx = this.photoCanvas.getContext('2d');
+    if (!ctx) return;
+    const w = this.photoCanvas.width;
+    const h = this.photoCanvas.height;
+
+    // Manila/Dark parchment archival document background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(8, 8, w - 16, h - 16);
+
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(8, 8, w - 16, h - 16);
+
+    // Official Municipal City Council Header
+    ctx.fillStyle = '#06b6d4';
+    ctx.font = 'bold 12px "Chakra Petch", monospace';
+    ctx.fillText('VESPERA METROPOLITAN REDEVELOPMENT BOARD', 16, 30);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.fillText('FILE REF: VMB-1994-082 // CLASSIFICATION: CONFIDENTIAL', 16, 46);
+    ctx.fillText('SUBJECT: EXPEDITED ACQUISITION & EMINENT DOMAIN ORDER', 16, 60);
+
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(16, 68);
+    ctx.lineTo(384, 68);
+    ctx.stroke();
+
+    // Table header
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(16, 76, 368, 18);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText('PARCEL ID       PREVIOUS OWNER         ACQUISITION TARGET', 20, 89);
+
+    // Rows
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '9.5px monospace';
+    ctx.fillText('PARCEL 128-E    VOSS ESTATE (RESIDENTIAL)   MERIDIAN URBAN LLC', 20, 107);
+    ctx.fillText('PARCEL 130-E    ADRIAN REPAIR SERVICES      MERIDIAN COMMERCIAL', 20, 122);
+    ctx.fillText('PARCEL 134-E    HARBOR BASIN FREIGHT        MARROW LOGISTICS GRP', 20, 137);
+
+    // Direct kickback line
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 9.5px monospace';
+    ctx.fillText('DISBURSAL: $450,000 ESCROW -> C/O COUNCILMAN V. ALBRIGHT', 16, 168);
+
+    // Big red Condemned & Marrow Syndicate Stamp
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(180, 188, 205, 34);
+    ctx.fillStyle = '#dc2626';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('ORDER: CONDEMNED & EVICTED', 190, 204);
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('ENFORCER: MARROW SYNDICATE HQ', 190, 216);
+
+    // Holographic municipal seal
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(42, 205, 18, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#06b6d4';
+    ctx.font = 'bold 7.5px monospace';
+    ctx.fillText('SEAL OF', 28, 202);
+    ctx.fillText('VESPERA', 27, 212);
   }
 
   public hideEvidence(): void {

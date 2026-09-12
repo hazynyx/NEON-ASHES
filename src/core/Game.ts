@@ -18,6 +18,8 @@ import { EnemyManager } from '../ai/EnemyAI.ts';
 import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
 import { createMission04Data } from '../missions/data/M04_ColdStorage.ts';
+import { createMission05Data } from '../missions/data/M05_TheJournalist.ts';
+import { DestinationMarker } from '../world/DestinationMarker.ts';
 import { NarrationManager } from '../audio/NarrationManager.ts';
 import { PauseMenu } from '../ui/PauseMenu.ts';
 
@@ -40,6 +42,7 @@ export class Game {
   public state: GameStateManager;
   public eventBus: EventBus;
   public enemyMgr: EnemyManager;
+  public destinationMarker: DestinationMarker;
 
   // Interior apartment state for M01
   private isInApartmentInterior: boolean = false;
@@ -80,6 +83,7 @@ export class Game {
     };
 
     this.missionMgr = new MissionManager(this.audio, this.world.lenaApartmentPos);
+    this.destinationMarker = new DestinationMarker(this.scene);
 
     this.pauseMenu = new PauseMenu(
       this.player,
@@ -144,6 +148,28 @@ export class Game {
                 this.world.warehouseEntrancePos,
                 this.world.warehouseDeskPos,
                 this.world.warehouseLockerPos
+              )
+            );
+          }, 800);
+        } else if (mission.id === 'M04') {
+          setTimeout(() => {
+            this.narrationMgr.queueNarrations([
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "The encrypted drive has financial ledgers tied to an investigative journalist named Mara Vale.",
+                delayAfter: 600
+              },
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "She's meeting contacts at Southside Diner on Central & 4th. Time to see what she knows.",
+                delayAfter: 500
+              }
+            ]);
+            this.missionMgr.startMission(
+              createMission05Data(
+                this.world.southsideDinerPos,
+                this.world.meridianOfficePos,
+                this.world.meridianDeskPos
               )
             );
           }, 800);
@@ -283,6 +309,11 @@ export class Game {
     // 7. Update Mission Logic & Interactions
     this.updateMissionAndInteractions();
 
+    // Destination Beacon Update
+    const currentObj = this.missionMgr.getCurrentObjective();
+    this.destinationMarker.setPosition(currentObj?.targetPosition || null);
+    this.destinationMarker.update(deltaTime);
+
     // 8. Update HUD
     const interaction = this.determineInteraction();
     this.hud.update(
@@ -372,6 +403,24 @@ export class Game {
         const dist = this.player.position.distanceTo(this.world.warehouseLockerPos);
         if (dist < 4.2) {
           return { text: "Extract Military Encrypted Drive", key: 'E' };
+        }
+      }
+
+      // Mission M05 specific interaction prompts
+      if (currentObj.id === 'talk_mara' || currentObj.id === 'debrief_mara') {
+        const dist = this.player.position.distanceTo(this.world.southsideDinerPos);
+        if (dist < 5.0) {
+          return { text: "Talk to Mara Vale", key: 'F' };
+        }
+      } else if (currentObj.id === 'infiltrate_office') {
+        const dist = this.player.position.distanceTo(this.world.meridianDeskPos);
+        if (dist < 4.5) {
+          return { text: "Search Archive Terminal", key: 'E' };
+        }
+      } else if (currentObj.id === 'photograph_evidence') {
+        const dist = this.player.position.distanceTo(this.world.meridianDeskPos);
+        if (dist < 4.5) {
+          return { text: "Photograph Zoning Buyout Accord", key: 'E' };
         }
       }
     }
@@ -611,6 +660,88 @@ export class Game {
       const distFromPier = this.player.position.distanceTo(this.world.pier19Pos);
       if (this.player.isInVehicle && distFromPier > 95.0) {
         this.missionMgr.advanceObjective(); // Completes M04!
+      }
+    }
+
+    // --- M05 Handlers ---
+    // Objective: goto_diner
+    if (currentObj.id === 'goto_diner') {
+      const dist = this.player.position.distanceTo(this.world.southsideDinerPos);
+      if (dist < 7.5) {
+        this.missionMgr.advanceObjective(); // Proceed to talk_mara
+      }
+    }
+
+    // Objective: talk_mara
+    if (currentObj.id === 'talk_mara') {
+      if (this.npcMgr.nearbyNPC && this.npcMgr.nearbyNPC.data.id === 'mara_vale') {
+        if (this.input.isKeyPressed('KeyF')) {
+          this.dialogueMgr.startDialogue(this.npcMgr.nearbyNPC.data.dialogue || [], () => {
+            this.missionMgr.advanceObjective(); // Proceed to goto_meridian
+          });
+        }
+      }
+    }
+
+    // Objective: goto_meridian
+    if (currentObj.id === 'goto_meridian') {
+      const dist = this.player.position.distanceTo(this.world.meridianOfficePos);
+      if (dist < 9.5) {
+        this.missionMgr.advanceObjective(); // Proceed to infiltrate_office
+      }
+    }
+
+    // Objective: infiltrate_office
+    if (currentObj.id === 'infiltrate_office') {
+      const dist = this.player.position.distanceTo(this.world.meridianDeskPos);
+      if (dist < 4.2 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.missionMgr.advanceObjective(); // Proceed to photograph_evidence
+      }
+    }
+
+    // Objective: photograph_evidence
+    if (currentObj.id === 'photograph_evidence') {
+      const dist = this.player.position.distanceTo(this.world.meridianDeskPos);
+      if (dist < 4.2 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playUIClick();
+        this.input.exitPointerLock();
+        this.hud.showEvidence('meridian_zoning', () => {
+          this.input.requestPointerLock();
+          this.missionMgr.advanceObjective(); // Proceed to return_to_mara
+        });
+      }
+    }
+
+    // Objective: return_to_mara
+    if (currentObj.id === 'return_to_mara') {
+      const dist = this.player.position.distanceTo(this.world.southsideDinerPos);
+      if (dist < 7.5) {
+        this.missionMgr.advanceObjective(); // Proceed to debrief_mara
+      }
+    }
+
+    // Objective: debrief_mara
+    if (currentObj.id === 'debrief_mara') {
+      if (this.npcMgr.nearbyNPC && this.npcMgr.nearbyNPC.data.id === 'mara_vale') {
+        if (this.input.isKeyPressed('KeyF')) {
+          this.dialogueMgr.startDialogue([
+            {
+              speaker: 'MARA VALE',
+              text: "Councilman Albright signed off on the eviction sweeps himself?! And the Marrow Syndicate gets 30% kickbacks?!"
+            },
+            {
+              speaker: 'KALEB',
+              text: "Black on white. Lena had the same shipping manifests Albright rubber-stamped. They wanted her silenced."
+            },
+            {
+              speaker: 'MARA VALE',
+              text: "This blows City Hall wide open. Kaleb, here is your fee, and Lena's personal audio tape from her safehouse lockbox. You earned this."
+            }
+          ], () => {
+            this.missionMgr.advanceObjective(); // Completes M05!
+          });
+        }
       }
     }
   }

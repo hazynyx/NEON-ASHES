@@ -213,9 +213,21 @@ export class Vehicle {
     this.mesh.add(plateMesh);
   }
 
+  public isAIControlled: boolean = false;
+  public targetSpeed: number = 0;
+
   public update(deltaTime: number, input?: InputManager, worldColliders?: THREE.Box3[]): void {
     if (this.isOccupied && input) {
       this.handleDriverInput(deltaTime, input);
+    } else if (this.isAIControlled) {
+      // Smooth AI acceleration & braking towards targetSpeed
+      if (this.speed < this.targetSpeed) {
+        this.speed = Math.min(this.targetSpeed, this.speed + deltaTime * 9.0);
+      } else if (this.speed > this.targetSpeed) {
+        this.speed = Math.max(this.targetSpeed, this.speed - deltaTime * 16.0);
+      }
+      // Steer back to center
+      this.steerAngle *= Math.max(0, 1.0 - deltaTime * 5.0);
     } else {
       // Natural deceleration / friction when unoccupied
       this.speed *= Math.max(0, 1.0 - deltaTime * 3.5);
