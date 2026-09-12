@@ -65,6 +65,13 @@ export class HUD {
   private minimapCanvas: HTMLCanvasElement;
   private minimapCtx: CanvasRenderingContext2D;
 
+  // Narration & Voice
+  private narrationBarEl: HTMLElement;
+  private narrationSpeakerEl: HTMLElement;
+  private narrationTextEl: HTMLElement;
+  private voiceToggleBtn: HTMLElement;
+  public onVoiceToggle: ((enabled: boolean) => void) | null = null;
+
   constructor() {
     this.missionTrackerEl = document.getElementById('mission-tracker')!;
     this.missionBadgeEl = document.getElementById('mission-badge')!;
@@ -119,6 +126,11 @@ export class HUD {
     this.minimapCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement;
     this.minimapCtx = this.minimapCanvas.getContext('2d')!;
 
+    this.narrationBarEl = document.getElementById('narration-bar')!;
+    this.narrationSpeakerEl = document.getElementById('narration-speaker')!;
+    this.narrationTextEl = document.getElementById('narration-text')!;
+    this.voiceToggleBtn = document.getElementById('voice-toggle-btn')!;
+
     this.setupListeners();
     this.renderHarborPhoto();
   }
@@ -131,6 +143,17 @@ export class HUD {
     this.closeEvidenceBtn.addEventListener('click', () => {
       this.hideEvidence();
     });
+
+    if (this.voiceToggleBtn) {
+      this.voiceToggleBtn.addEventListener('click', () => {
+        const isMuted = this.voiceToggleBtn.classList.toggle('muted');
+        const enabled = !isMuted;
+        this.voiceToggleBtn.innerText = enabled ? 'VOICE: ON' : 'VOICE: OFF';
+        if (this.onVoiceToggle) {
+          this.onVoiceToggle(enabled);
+        }
+      });
+    }
   }
 
   public update(
@@ -370,6 +393,19 @@ export class HUD {
 
   public hideDialogue(): void {
     this.dialogueBoxEl.classList.add('hidden');
+  }
+
+  // Narration Methods
+  public showNarration(speaker: string, text: string): void {
+    if (!this.narrationBarEl) return;
+    this.narrationBarEl.classList.remove('hidden');
+    this.narrationSpeakerEl.innerText = speaker;
+    this.narrationTextEl.innerText = `"${text}"`;
+  }
+
+  public hideNarration(): void {
+    if (!this.narrationBarEl) return;
+    this.narrationBarEl.classList.add('hidden');
   }
 
   // Evidence Modal

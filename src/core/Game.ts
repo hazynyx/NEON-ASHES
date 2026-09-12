@@ -18,6 +18,7 @@ import { EnemyManager } from '../ai/EnemyAI.ts';
 import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
 import { createMission04Data } from '../missions/data/M04_ColdStorage.ts';
+import { NarrationManager } from '../audio/NarrationManager.ts';
 
 export class Game {
   public scene: THREE.Scene;
@@ -30,6 +31,7 @@ export class Game {
   public npcMgr: NPCManager;
   public missionMgr: MissionManager;
   public dialogueMgr: DialogueManager;
+  public narrationMgr: NarrationManager;
   public hud: HUD;
   public input: InputManager;
   public audio: AudioManager;
@@ -48,8 +50,8 @@ export class Game {
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0b0d0f);
-    this.scene.fog = new THREE.FogExp2(0x0b0d0f, 0.007);
+    this.scene.background = new THREE.Color(0x131a26);
+    this.scene.fog = new THREE.FogExp2(0x131a26, 0.0022); // Atmospheric visibility up to 450m
 
     this.input = new InputManager();
     this.input.attachCanvas(canvas);
@@ -68,7 +70,12 @@ export class Game {
     this.npcMgr = new NPCManager(this.scene);
     this.enemyMgr = new EnemyManager(this.scene, this.audio);
     this.hud = new HUD();
-    this.dialogueMgr = new DialogueManager(this.hud, this.audio);
+    this.narrationMgr = new NarrationManager(this.audio, this.hud);
+    this.dialogueMgr = new DialogueManager(this.hud, this.audio, this.narrationMgr);
+
+    this.hud.onVoiceToggle = (enabled: boolean) => {
+      this.narrationMgr.isVoiceEnabled = enabled;
+    };
 
     this.missionMgr = new MissionManager(this.audio, this.world.lenaApartmentPos);
 
@@ -148,6 +155,27 @@ export class Game {
         }
 
         this.input.requestPointerLock();
+
+        // Trigger Kaleb's Prologue Monologue Narration
+        setTimeout(() => {
+          this.narrationMgr.queueNarrations([
+            {
+              speaker: 'KALEB (INTERNAL)',
+              text: "Six years away from Vespera. The air still smells like salt, sulfur, and burnt gasoline.",
+              delayAfter: 600
+            },
+            {
+              speaker: 'KALEB (INTERNAL)',
+              text: "Lena's letters stopped two weeks ago. She told me to stay away... but she's the only family I have left.",
+              delayAfter: 600
+            },
+            {
+              speaker: 'KALEB (INTERNAL)',
+              text: "I need to take Eastline Avenue up to 128 Eastline. Check her apartment.",
+              delayAfter: 400
+            }
+          ]);
+        }, 1200);
       });
     }
 

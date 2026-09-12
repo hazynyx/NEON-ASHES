@@ -22,7 +22,7 @@ export class VehicleManager {
   }
 
   private spawnInitialVehicles(): void {
-    // 1. Kaleb's Car: Vesper Sedan (Dark Burgundy/Charcoal)
+    // 1. Kaleb's Car: Vesper Sedan (Rich Crimson Burgundy)
     const kalebCarConfig: VehicleConfig = {
       id: 'kaleb_car',
       name: 'VESPER SEDAN',
@@ -31,7 +31,7 @@ export class VehicleManager {
       reverseSpeed: 8,
       braking: 22,
       turnSpeed: 1.8,
-      color: 0x4a151b // Burgundy
+      color: 0x6b1a26 // Rich Burgundy
     };
 
     // Spawn Kaleb's car on the avenue approach heading towards Eastline
@@ -41,7 +41,7 @@ export class VehicleManager {
       new THREE.Vector3(0, 0, 110),
       this.audio
     );
-    kalebCar.heading = Math.PI; // Facing forward towards 0, 0
+    kalebCar.heading = 0; // Facing forward towards -Z (Eastline Avenue)
     this.vehicles.push(kalebCar);
 
     // 2. Additional parked and street vehicles in Eastline

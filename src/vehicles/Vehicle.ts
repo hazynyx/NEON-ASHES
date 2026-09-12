@@ -95,36 +95,36 @@ export class Vehicle {
     // 2. Cabin / Roof
     const cabinGeo = new THREE.BoxGeometry(1.8, 0.6, 2.4);
     const cabinMesh = new THREE.Mesh(cabinGeo, windowMat);
-    cabinMesh.position.set(0, 1.15, -0.3);
+    cabinMesh.position.set(0, 1.15, 0.2);
     cabinMesh.castShadow = true;
     this.mesh.add(cabinMesh);
 
     // Roof cap
     const roofGeo = new THREE.BoxGeometry(1.75, 0.08, 2.2);
     const roofMesh = new THREE.Mesh(roofGeo, carMat);
-    roofMesh.position.set(0, 1.48, -0.3);
+    roofMesh.position.set(0, 1.48, 0.2);
     this.mesh.add(roofMesh);
 
-    // 3. Bumpers & Grille
+    // 3. Bumpers & Grille (Front at -Z, Rear at +Z)
     const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 0.3), trimMat);
-    frontBumper.position.set(0, 0.45, 2.45);
+    frontBumper.position.set(0, 0.45, -2.45);
     this.mesh.add(frontBumper);
 
     const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 0.3), trimMat);
-    rearBumper.position.set(0, 0.45, -2.45);
+    rearBumper.position.set(0, 0.45, 2.45);
     this.mesh.add(rearBumper);
 
-    // 4. Wheels & Suspension
+    // 4. Wheels & Suspension (Front at -Z, Rear at +Z)
     const wheelRadius = 0.38;
     const wheelWidth = 0.28;
     const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelWidth, 16);
     wheelGeo.rotateZ(Math.PI / 2);
 
     const wheelPositions = [
-      { x: -1.05, y: 0.38, z: 1.45, isFront: true },  // Front Left
-      { x: 1.05, y: 0.38, z: 1.45, isFront: true },   // Front Right
-      { x: -1.05, y: 0.38, z: -1.45, isFront: false }, // Rear Left
-      { x: 1.05, y: 0.38, z: -1.45, isFront: false }  // Rear Right
+      { x: -1.05, y: 0.38, z: -1.45, isFront: true },  // Front Left
+      { x: 1.05, y: 0.38, z: -1.45, isFront: true },   // Front Right
+      { x: -1.05, y: 0.38, z: 1.45, isFront: false },  // Rear Left
+      { x: 1.05, y: 0.38, z: 1.45, isFront: false }   // Rear Right
     ];
 
     wheelPositions.forEach((wp) => {
@@ -151,32 +151,66 @@ export class Vehicle {
       }
     });
 
-    // 5. Headlights
+    // 5. Headlights (Pointing forward towards -Z)
     [-0.75, 0.75].forEach(x => {
       const lightMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.35, 0.2, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0xffffff })
+        new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          emissive: 0xffeedd,
+          emissiveIntensity: 2.2,
+          roughness: 0.2
+        })
       );
-      lightMesh.position.set(x, 0.6, 2.42);
+      lightMesh.position.set(x, 0.6, -2.42);
       this.mesh.add(lightMesh);
 
-      const spot = new THREE.SpotLight(0xfff4d0, 1.8, 45, Math.PI / 5, 0.3, 1);
-      spot.position.set(x, 0.6, 2.5);
-      spot.target.position.set(x, 0, 20);
+      const spot = new THREE.SpotLight(0xfff6dd, 3.5, 55, Math.PI / 4.5, 0.35, 0.8);
+      spot.position.set(x, 0.6, -2.4);
+      const targetObj = new THREE.Object3D();
+      targetObj.position.set(x, 0, -25);
+      this.mesh.add(targetObj);
+      spot.target = targetObj;
       this.mesh.add(spot);
-      this.mesh.add(spot.target);
       this.headlights.push(spot);
     });
 
-    // 6. Taillights
+    // Forward road flood beam
+    const headBeam = new THREE.PointLight(0xfff3d0, 2.2, 32);
+    headBeam.position.set(0, 0.7, -4.5);
+    this.mesh.add(headBeam);
+
+    // 6. Taillights (At rear +Z)
     [-0.75, 0.75].forEach(x => {
       const tailMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.35, 0.18, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0xef4444 })
+        new THREE.MeshStandardMaterial({
+          color: 0xff2222,
+          emissive: 0xff1515,
+          emissiveIntensity: 2.5,
+          roughness: 0.2
+        })
       );
-      tailMesh.position.set(x, 0.6, -2.42);
+      tailMesh.position.set(x, 0.6, 2.42);
       this.mesh.add(tailMesh);
     });
+
+    // Rear taillight glow
+    const rearGlow = new THREE.PointLight(0xff2222, 1.2, 7);
+    rearGlow.position.set(0, 0.6, 2.6);
+    this.mesh.add(rearGlow);
+
+    // License plate
+    const plateMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 0.22, 0.05),
+      new THREE.MeshStandardMaterial({
+        color: 0xdcd6c8,
+        roughness: 0.5,
+        metalness: 0.2
+      })
+    );
+    plateMesh.position.set(0, 0.45, 2.6);
+    this.mesh.add(plateMesh);
   }
 
   public update(deltaTime: number, input?: InputManager, worldColliders?: THREE.Box3[]): void {
@@ -188,9 +222,9 @@ export class Vehicle {
       this.steerAngle *= Math.max(0, 1.0 - deltaTime * 5.0);
     }
 
-    // Move forward based on current heading and speed
-    const forwardX = Math.sin(this.heading);
-    const forwardZ = Math.cos(this.heading);
+    // Move forward based on current heading and speed (-Z is forward)
+    const forwardX = -Math.sin(this.heading);
+    const forwardZ = -Math.cos(this.heading);
 
     const prevPos = this.position.clone();
     this.position.x += forwardX * this.speed * deltaTime;

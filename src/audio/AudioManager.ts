@@ -385,4 +385,50 @@ export class AudioManager {
     osc.start(now);
     osc.stop(now + 0.04);
   }
+
+  // --- Radio Squelch & Click SFX ---
+  public playRadioClick(): void {
+    if (!this.ensureContext() || this.isMuted) return;
+    const ctx = this.ctx!;
+    const now = ctx.currentTime;
+
+    // Short squelch noise burst
+    const bufferSize = ctx.sampleRate * 0.04;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.015));
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1800, now);
+    filter.Q.value = 3;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain!);
+
+    // Soft mic click
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(950, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.03);
+    oscGain.gain.setValueAtTime(0.12, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.masterGain!);
+
+    noise.start(now);
+    osc.start(now);
+    osc.stop(now + 0.04);
+  }
 }

@@ -17,7 +17,7 @@ export class EngineRenderer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.45;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     window.addEventListener('resize', this.onResize.bind(this));

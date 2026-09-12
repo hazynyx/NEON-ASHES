@@ -1,6 +1,7 @@
 import { HUD } from '../ui/HUD.ts';
 import { AudioManager } from '../audio/AudioManager.ts';
 import { InputManager } from '../core/InputManager.ts';
+import { NarrationManager } from '../audio/NarrationManager.ts';
 
 export interface DialogueLine {
   speaker: string;
@@ -10,14 +11,16 @@ export interface DialogueLine {
 export class DialogueManager {
   private hud: HUD;
   private audio: AudioManager;
+  private narrationMgr?: NarrationManager;
   public isActive: boolean = false;
   private currentLines: DialogueLine[] = [];
   private lineIndex: number = 0;
   private onFinishedCallback?: () => void;
 
-  constructor(hud: HUD, audio: AudioManager) {
+  constructor(hud: HUD, audio: AudioManager, narrationMgr?: NarrationManager) {
     this.hud = hud;
     this.audio = audio;
+    this.narrationMgr = narrationMgr;
 
     // Listen for click on dialogue box
     const dialogueBox = document.getElementById('dialogue-box');
@@ -28,6 +31,10 @@ export class DialogueManager {
         }
       });
     }
+  }
+
+  public setNarrationManager(mgr: NarrationManager): void {
+    this.narrationMgr = mgr;
   }
 
   public startDialogue(lines: DialogueLine[], onFinished?: () => void): void {
@@ -44,6 +51,9 @@ export class DialogueManager {
     const line = this.currentLines[this.lineIndex];
     this.hud.showDialogue(line.speaker, line.text);
     this.audio.playDialogueBlip();
+    if (this.narrationMgr) {
+      this.narrationMgr.speak(line.speaker, line.text);
+    }
   }
 
   public advance(): void {
@@ -59,9 +69,13 @@ export class DialogueManager {
   public endDialogue(): void {
     this.isActive = false;
     this.hud.hideDialogue();
+    if (this.narrationMgr) {
+      this.narrationMgr.stop();
+    }
     if (this.onFinishedCallback) {
-      this.onFinishedCallback();
+      const cb = this.onFinishedCallback;
       this.onFinishedCallback = undefined;
+      cb();
     }
   }
 

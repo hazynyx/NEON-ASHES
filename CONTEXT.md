@@ -139,28 +139,35 @@
 ---
 
 ## 7. RECENT CHANGES & CHANGE LOG
-### 2026-09-12 (Session 4)
-- Implemented Tactical 12G Shotgun weapon class with procedural sub-bass / explosive blast / mechanical pump racking audio in `src/audio/AudioManager.ts` (`playShotgunFire`).
-- Implemented multi-pellet spread raycast firearm kinematics in `src/player/Player.ts` (6 spread pellets per pump, variable angular deviation, 25 damage per pellet).
-- Implemented instant weapon switching in `Player.ts` via keys `1` (Service Pistol), `2` (12G Tactical Shotgun), and `3` (Unarmed/Holster).
-- Updated `src/ui/HUD.ts` to dynamically render active weapon names and clip/reserve ammunition counts.
-- Created Pier 19 Warehouse 19 interior in `src/world/World.ts`: walk-in hollow interior, cold blue industrial lighting, refrigeration storage racks, office terminal desk, Cold Storage Locker 4B with emerald electronic keypad glow, and interactive animated roll-up shutter door.
-- Created `src/missions/data/M04_ColdStorage.ts` defining data-driven objectives for Mission M04.
-- Extended Evidence Modal in `src/ui/HUD.ts` to dynamically render the authentic Meridian Logistics Bill of Lading with Councilman Vance Albright's authorization signature and Marrow Syndicate consignee details.
-- Extended `src/ai/EnemyAI.ts` (`EnemyManager.spawnEnemies`) for dynamic wave combat and variable bullet damage.
-- Integrated M04 into `src/core/Game.ts`: roll-up gate interaction with keycard, office manifest inspection, encrypted military drive extraction, Syndicate 3-guard ambush firefight, and perimeter vehicle getaway.
-- Fully verified Mission M04 and Shotgun combat system in automated browser subagent test with recorded screenshots and gameplay recording.
-- Production build verified with zero errors (`npm run build`).
+### 2026-09-12 (Session 5)
+- **Vehicle Driving Direction & Mesh Orientation Fix:**
+  - Resolved vehicle reversing on W key in `src/vehicles/Vehicle.ts` and `src/vehicles/VehicleManager.ts`.
+  - Reoriented 3D car mesh: front bumper, headlights, and front wheels placed along `-Z` (standard forward camera look vector) and rear bumper/taillights at `+Z`.
+  - Corrected forward motion vector to `x: -sin(heading), z: -cos(heading)`.
+  - Added dual-cone forward headlight beams (`SpotLight` + forward road flood `PointLight`), emissive glowing red taillights with ground reflection, chrome bumper trim, license plate, and rich crimson burgundy metallic paint (`0x6b1a26`).
+  - Pressing `W` now accelerates forward into the distance away from camera; `S` brakes and reverses.
+- **Lighting & World Visibility Overhaul:**
+  - Boosted WebGL ACES tone mapping exposure to `1.45` in `src/rendering/Renderer.ts`.
+  - Adjusted atmospheric twilight time to `19.0` (dusk golden hour) in `src/rendering/Lighting.ts`, boosting ambient light to `1.1` (`0x475569`), hemisphere light to `1.0` (`0x93c5fd`), and directional light to `1.4` (sun) / `1.1` (moon).
+  - Added a secondary `cityFillLight` (`THREE.DirectionalLight(0x60a5fa, 0.45)`) eliminating pitch-black building silhouettes.
+  - Increased streetlight point light intensity to `4.2` with radius `38m` in `src/world/World.ts`.
+  - Tuned atmospheric fog in `src/core/Game.ts` from pitch-black `0x0b0d0f, 0.007` to atmospheric indigo `0x131a26, 0.0022`, ensuring clear visibility up to 450m while retaining moody film noir tone.
+- **Voice Narration & Monologue System:**
+  - Created `src/audio/NarrationManager.ts` utilizing browser Web Speech API (`window.speechSynthesis`) with customized voice pitches (deep noir pitch `0.85`, rate `0.92` for Kaleb, distinct pitches for Mrs. Gable, Jonah, and Syndicate enforcers).
+  - Added radio chirp/squelch procedural audio effect (`AudioManager.playRadioClick()`).
+  - Integrated full queue system for monologue thoughts and wired dialogue speech synthesis in `src/dialogue/DialogueManager.ts`.
+  - Added bottom HUD `#narration-bar` with amber pulse indicator, speaker tag (`KALEB (INTERNAL)`), and high-contrast typography (strictly adhering to solid dark surfaces, NO glassmorphism).
+  - Added `#voice-toggle-btn` to top HUD status panel (`VOICE: ON/OFF`).
+  - Triggered Kaleb's Prologue Monologue upon entering Vespera City.
+- **Verification:**
+  - Automated browser subagent playtest verified vehicle forward acceleration with W, illuminated world, glowing taillights, and narration speech/subtitles.
+  - Production build passed clean (`npm run build`).
 
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
 - **Act I is 100% complete!** All 4 vertical slice missions (M01 "Home Again", M02 "Old Debts", M03 "The Harbor", and M04 "Cold Storage") are fully implemented, verified, and chained.
-- Kaleb possesses:
-  - **Service Pistol** (12-round clip)
-  - **12G Tactical Shotgun** (6-round tube)
-  - **Cold Storage Keycard**
-  - **Encrypted Military Data Drive** linking Meridian Properties, Councilman Vance Albright, and the Marrow Syndicate to Lena's investigation.
+- Vehicle physics, forward steering/acceleration, atmospheric lighting, and voice narration systems are verified and active.
 - Next development chunk is **Act II — The Money Trail (Starting Mission M05 "The Journalist")**:
   - Meeting investigative journalist **Mara Vale** at Southside Diner.
   - Exchanging intelligence on Lena's disappearance and decrypting the drive.

@@ -350,7 +350,7 @@ export class World {
       this.scene.add(head);
 
       // Point light
-      const pLight = new THREE.PointLight(0xffecd1, 2.8, 28, 1.1);
+      const pLight = new THREE.PointLight(0xffecd1, 4.2, 38, 1.0);
       pLight.position.set(coord.x, 6.8, coord.z);
       this.scene.add(pLight);
       this.streetlightPoints.push(pLight);
@@ -616,10 +616,10 @@ export class World {
   }
 
   public updateStreetlights(timeOfDay: number): void {
-    const isNight = timeOfDay < 6.0 || timeOfDay > 19.5;
-    const intensity = isNight ? 1.0 : 0.0;
+    const isDuskOrNight = timeOfDay < 6.5 || timeOfDay > 18.0;
+    const intensity = isDuskOrNight ? 1.0 : 0.25;
     this.streetlightPoints.forEach(light => {
-      light.intensity = intensity;
+      light.intensity = 4.2 * intensity;
     });
   }
 }
