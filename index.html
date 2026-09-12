@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>NEON ASHES</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- 3D Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Crosshair / Reticle -->
+    <div id="crosshair" class="hidden">
+      <div class="reticle-dot"></div>
+      <div class="reticle-ring"></div>
+    </div>
+
+    <!-- Gameplay HUD -->
+    <div id="hud-root">
+      <!-- Top Left: Mission Objective Banner -->
+      <div id="mission-tracker" class="hud-panel">
+        <div class="mission-category-badge" id="mission-badge">PROLOGUE // M01</div>
+        <div class="mission-title" id="mission-title">HOME AGAIN</div>
+        <div class="mission-objective-box">
+          <span class="obj-bullet">▸</span>
+          <span id="mission-objective-text">Drive to Lena's apartment in Eastline</span>
+        </div>
+        <div id="mission-sub-objective" class="mission-sub-text">Distance: <span id="mission-distance">450m</span></div>
+      </div>
+
+      <!-- Top Right: Wanted Level & Clock / Cash -->
+      <div id="status-panel" class="hud-panel">
+        <div class="stats-row">
+          <div class="cash-display">$<span id="player-cash">240</span></div>
+          <div class="time-display" id="game-clock">21:45</div>
+        </div>
+        <div id="wanted-stars" class="wanted-container">
+          <span class="star" data-index="1">★</span>
+          <span class="star" data-index="2">★</span>
+          <span class="star" data-index="3">★</span>
+          <span class="star" data-index="4">★</span>
+          <span class="star" data-index="5">★</span>
+        </div>
+      </div>
+
+      <!-- Bottom Left: Minimap & Compass & Player Vital Bars -->
+      <div id="player-status" class="hud-panel">
+        <div id="minimap-container">
+          <canvas id="minimap-canvas" width="180" height="180"></canvas>
+          <div id="minimap-compass-label">N</div>
+          <div id="minimap-district-label">EASTLINE</div>
+        </div>
+        <div class="vitals-container">
+          <div class="vital-bar-wrapper">
+            <div class="vital-label">HLTH</div>
+            <div class="vital-track">
+              <div id="health-bar-fill" class="vital-fill health-fill" style="width: 100%;"></div>
+            </div>
+            <span id="health-num" class="vital-val">100</span>
+          </div>
+          <div class="vital-bar-wrapper">
+            <div class="vital-label">STAM</div>
+            <div class="vital-track">
+              <div id="stamina-bar-fill" class="vital-fill stamina-fill" style="width: 100%;"></div>
+            </div>
+            <span id="stamina-num" class="vital-val">100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Right: Weapon & Ammo & Vehicle Speedometer -->
+      <div id="weapon-vehicle-status" class="hud-panel">
+        <div id="weapon-display" class="hud-subpanel">
+          <div class="weapon-name" id="weapon-name">SERVICE PISTOL</div>
+          <div class="ammo-count"><span id="ammo-clip">12</span> <span class="ammo-slash">/</span> <span id="ammo-reserve">48</span></div>
+        </div>
+
+        <div id="vehicle-speedo" class="hud-subpanel hidden">
+          <div class="vehicle-title" id="vehicle-model">VESPER SEDAN</div>
+          <div class="speed-readout"><span id="speed-number">0</span> <span class="speed-unit">MPH</span></div>
+          <div class="gear-indicator">GEAR <span id="gear-val">1</span></div>
+        </div>
+      </div>
+
+      <!-- Center Interaction Prompt -->
+      <div id="interaction-prompt" class="interaction-card hidden">
+        <span class="key-badge" id="prompt-key">E</span>
+        <span class="prompt-text" id="prompt-label">Enter Vehicle</span>
+      </div>
+
+      <!-- Center Notification Toast -->
+      <div id="notification-banner" class="notification-banner hidden">
+        <div class="notif-title" id="notif-title">AUTOSAVED</div>
+        <div class="notif-body" id="notif-body">Checkpoint reached</div>
+      </div>
+    </div>
+
+    <!-- Dialogue Box Overlay -->
+    <div id="dialogue-box" class="dialogue-container hidden">
+      <div class="dialogue-inner">
+        <div class="speaker-name" id="dialogue-speaker">KALEB VOSS</div>
+        <div class="dialogue-text" id="dialogue-content">Lena... Where did you go?</div>
+        <div id="dialogue-options" class="dialogue-options-list"></div>
+        <div class="dialogue-continue-prompt">[Space] Continue</div>
+      </div>
+    </div>
+
+    <!-- Evidence / Photo Inspection Modal -->
+    <div id="evidence-modal" class="modal-overlay hidden">
+      <div class="evidence-card">
+        <div class="evidence-header">
+          <div class="evidence-title">EVIDENCE COLLECTED: HARBOR PHOTOGRAPH</div>
+          <button id="close-evidence-btn" class="modal-close-btn">ESC</button>
+        </div>
+        <div class="evidence-image-container">
+          <canvas id="photo-canvas" width="400" height="260"></canvas>
+        </div>
+        <div class="evidence-caption">
+          <strong>Location:</strong> Pier 19, Old Harbor &bull; <strong>Date:</strong> 3 Nights Ago<br>
+          <em>The photograph shows Lena Voss speaking to an unidentified man in a dark trench coat next to a black freighter container. On the back, handwritten in Lena's script: "Jonah warned me. Check Adrian's safe."</em>
+        </div>
+        <div class="evidence-footer">
+          <button id="continue-mission-btn" class="primary-btn">TAKE PHOTOGRAPH & CONTINUE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mission Passed / Failed Banner -->
+    <div id="mission-result-banner" class="mission-result hidden">
+      <div class="banner-title" id="result-title">MISSION PASSED</div>
+      <div class="banner-sub" id="result-sub">HOME AGAIN</div>
+      <div class="banner-reward" id="result-reward">+ $500 &bull; Safehouse Unlocked &bull; Pistol Ammo</div>
+      <button id="result-continue-btn" class="primary-btn">CONTINUE TO FREE ROAM</button>
+    </div>
+
+    <!-- Controls Overlay / Help -->
+    <div id="controls-help" class="controls-overlay hidden">
+      <div class="controls-modal">
+        <h2>CONTROLS</h2>
+        <div class="controls-grid">
+          <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div><div>Move / Steer Car</div>
+          <div><kbd>Shift</kbd></div><div>Sprint / Boost Acceleration</div>
+          <div><kbd>Space</kbd></div><div>Jump / Handbrake</div>
+          <div><kbd>C</kbd></div><div>Crouch</div>
+          <div><kbd>E</kbd></div><div>Enter / Exit Vehicle / Interact / Investigate</div>
+          <div><kbd>F</kbd></div><div>Talk to NPC</div>
+          <div><kbd>Left Click</kbd></div><div>Shoot Weapon / Punch</div>
+          <div><kbd>Right Click (Hold)</kbd></div><div>Aim Weapon</div>
+          <div><kbd>R</kbd></div><div>Reload</div>
+          <div><kbd>1</kbd> / <kbd>2</kbd> / <kbd>Q</kbd></div><div>Holster / Equip Pistol</div>
+          <div><kbd>M</kbd></div><div>Toggle Full Map</div>
+          <div><kbd>F1</kbd></div><div>Toggle This Controls Guide</div>
+          <div><kbd>Tab</kbd></div><div>Toggle Camera Perspective</div>
+        </div>
+        <button id="close-controls-btn" class="primary-btn">CLOSE [F1]</button>
+      </div>
+    </div>
+
+    <!-- Start / Pause Screen -->
+    <div id="start-screen" class="start-screen">
+      <div class="title-container">
+        <h1 class="game-logo">NEON ASHES</h1>
+        <p class="game-tagline">VESPERA CITY // A CRIME THRILLER</p>
+      </div>
+      <div class="start-card">
+        <div class="start-brief">
+          <strong>PROLOGUE: Kaleb Voss returns to Vespera City.</strong><br>
+          His younger sister Lena has vanished from her Eastline apartment.
+        </div>
+        <div class="btn-group">
+          <button id="start-game-btn" class="primary-btn large-btn">ENTER VESPERA CITY</button>
+          <button id="instructions-btn" class="secondary-btn">VIEW CONTROLS</button>
+        </div>
+        <div class="audio-notice">Audio synthesized via Web Audio API &bull; Click to start</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

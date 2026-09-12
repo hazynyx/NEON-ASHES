@@ -1124,16 +1124,19 @@ Current focus:
 Vehicle + mission integration
 
 Last completed:
+
 - player controller
 - basic NPC system
 - vehicle controller
 - basic combat
 
 Currently broken:
+
 - vehicle passenger exit
 - mission checkpoint reload
 
 Next:
+
 1. fix passenger exit
 2. implement mission checkpoint persistence
 3. test M01 start-to-finish
@@ -1159,14 +1162,14 @@ Use explicit status labels:
 Example:
 
 ```markdown
-| System | Status |
-|---|---|
-| Player movement | COMPLETE |
-| Combat | PARTIAL |
-| Vehicles | COMPLETE |
-| Police | IN PROGRESS |
-| Save system | PARTIAL |
-| Phone | NOT STARTED |
+| System          | Status      |
+| --------------- | ----------- |
+| Player movement | COMPLETE    |
+| Combat          | PARTIAL     |
+| Vehicles        | COMPLETE    |
+| Police          | IN PROGRESS |
+| Save system     | PARTIAL     |
+| Phone           | NOT STARTED |
 ```
 
 ---
@@ -1179,6 +1182,7 @@ Every meaningful development session should update:
 ## RECENT CHANGES
 
 ### 2026-09-12
+
 - Added vehicle enter/exit system.
 - Added basic sedan physics.
 - Added vehicle collision.
@@ -1259,6 +1263,7 @@ Example:
 ## REJECTED APPROACHES
 
 ### Giant monolithic world scene
+
 Reason rejected:
 Caused excessive memory usage and slow loading.
 
@@ -1266,6 +1271,7 @@ Replacement:
 Cell-based world streaming.
 
 ### Hard-coded mission functions
+
 Reason rejected:
 Difficult to branch and maintain.
 
@@ -1304,6 +1310,7 @@ Use:
 ## KNOWN BUGS
 
 ### BUG-001
+
 Severity: P1
 Area: Vehicles
 Description:
@@ -1431,12 +1438,14 @@ Current task:
 Implementing M03 — The Harbor.
 
 Completed:
+
 - mission trigger
 - harbor environment
 - dock NPCs
 - vehicle objective
 
 Remaining:
+
 - combat encounter
 - escape sequence
 - mission completion
@@ -1449,6 +1458,7 @@ Recommended next step:
 Fix police vehicle pursuit before continuing M03.
 
 Files currently being modified:
+
 - src/missions/M03_TheHarbor.ts
 - src/police/PoliceAI.ts
 - src/vehicles/VehicleAI.ts
@@ -1740,6 +1750,7 @@ Test constantly.
 Document everything.
 
 And keep `CONTEXT.md` accurate enough that another AI can take over the project **without needing the previous AI's memory.**
+
 # GITHUB AUTO-SYNC REQUIREMENT
 
 The AI must keep the GitHub repository synchronized with the local project throughout development. After every meaningful change — including feature implementations, bug fixes, asset additions/removals, documentation updates, configuration changes, and architectural changes — the AI should review the changed files, run appropriate tests or validation, update `CONTEXT.md`, and commit the resulting working state with a clear descriptive commit message. Push the commit to the configured GitHub repository after validation so GitHub remains an up-to-date backup and handoff point. Do not commit known broken or half-implemented work unless it is explicitly marked as `WIP` and documented in `CONTEXT.md`. Never overwrite or discard existing remote work blindly; pull/reconcile changes when necessary before pushing. The GitHub repository should always represent the latest verified state of the project so that if the current AI reaches its token/context limit, crashes, or is replaced by another AI, the next AI can clone/pull the repository and continue development from the latest `CONTEXT.md` and source code without losing progress.
