@@ -195,6 +195,34 @@
   - Active operation briefing card, objective timeline with completed checkboxes, and dossier archive.
   - Full keyboard & mouse controls grid.
 
+### 2026-11-13 (Session 7)
+- **Mission 1 Apartment Interior & Teleportation Overhaul:**
+  - **Dedicated Interior Room Cell (`src/world/ApartmentInterior.ts`):**
+    - Isolated interior space centered at `(300, 0, -300)` measuring `10m x 8m x 3.4m` preventing collision or audio bleed from city streets.
+    - Polished dark oak parquet floor, molded ceiling trim, vintage teal plaster walls, mahogany wainscoting.
+    - Investigation desk with pulled-out drawer, spilled Manila folders, papers on floor, overturned wooden chair, corkboard with pinned evidence Polaroids and red yarn.
+    - Secret loose floorboard cavity with pulsing gold investigation beacon (`this.floorboardBeacon`).
+    - Lena's rumpled bed, navy duvet, nightstand, ransacked bookshelf with knocked-over books.
+    - Atmospheric multi-source lighting: warm ambient light (`0xffedd5, 1.8`), ceiling fixture (`3.2`), emerald green banker's lamp (`4.5`), bedside lamp (`2.8`), and window moonlight (`1.6`).
+    - Dedicated interior radar floorplan on minimap (`128 EASTLINE // UNIT 102`) with dashed GPS breadcrumb route.
+  - **Camera Alignment & Teleport Snap (`src/rendering/Camera.ts`):**
+    - Added `snap(targetPos, yaw, pitch, colliders)` instantly placing smoothed target and camera position without lerping across the map.
+    - Added auto-snap guard in `Camera.update()` if target jumps > 5.0m to guarantee smooth teleportation.
+    - Centered `interiorOffset` to `(0, 1.45, 0)` and set `interiorDistance = 1.85m` for centered over-the-shoulder framing.
+    - Clamped indoor camera pitch to `[-Math.PI / 4.5, Math.PI / 3.4]` preventing clipping through floor or ceiling.
+  - **Player Teleport & Heading (`src/player/Player.ts`):**
+    - Added `teleport(pos, heading)` to cancel previous velocity, sync mesh position and rotation, and face North into the room (`heading = Math.PI`).
+    - Exited vehicle state automatically on teleport.
+  - **Input & Interaction Glitch Fixes (`src/core/Game.ts` & `src/core/InputManager.ts`):**
+    - Added `consumeKey(code)` in `InputManager.ts`.
+    - Fixed same-frame entry-to-exit bug where pressing `E` at the door instantly re-triggered the exit door within proximity.
+    - Added `isEvidenceOpen` state in `src/ui/HUD.ts` and blocked pointer lock change callback from opening the Pause Menu / Map over the evidence modal.
+    - Set `exit_apartment` objective type to `INTERACT` in `src/missions/data/M01_HomeAgain.ts` so proximity does not prematurely trigger mission completion before exiting.
+    - Updated porch exit position to `(30, 0, -23.5)` facing South toward Eastline Avenue.
+  - **Automated Regression Suite (`scripts/test_m01_apartment.js`):**
+    - End-to-end Puppeteer verification testing: entering Unit 102, camera alignment, desk investigation prompt, harbor photo modal examination, exit door prompt, and mission passed rewards.
+    - Captured verified screenshots: `m01_apartment_just_entered.png`, `m01_apartment_desk_search_prompt.png`, `m01_apartment_evidence_modal.png`, `m01_apartment_exit_door_prompt.png`, `m01_mission_passed_outside.png`.
+
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
