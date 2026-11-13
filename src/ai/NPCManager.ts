@@ -41,6 +41,11 @@ export class NPC {
   }
 
   private buildNPCMesh(): void {
+    if (this.data.id === 'jonah_reyes') {
+      this.buildJonahMesh();
+      return;
+    }
+
     const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2a078 });
     const clothesColors = [0x334155, 0x475569, 0x64748b, 0x1e293b, 0x581c87];
     const clothCol = this.data.isStoryNPC
@@ -85,6 +90,120 @@ export class NPC {
     const rightLegMesh = new THREE.Mesh(legGeo, pantsMat);
     rightLegMesh.position.y = -0.35;
     this.rightLeg.add(rightLegMesh);
+    this.mesh.add(this.rightLeg);
+  }
+
+  private buildJonahMesh(): void {
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2a078, roughness: 0.8 });
+    const coverallMat = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.75, metalness: 0.2 }); // Dark navy mechanic coveralls
+    const beltMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 }); // Heavy brown leather toolbelt
+    const bootsMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 }); // Steel-toe boots
+    const toolMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 }); // Chrome vanadium steel
+    const capMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 }); // Grey shop cap
+    const badgeMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 }); // Amber name badge
+
+    // 1. Torso (Mechanic Coveralls)
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.74, 0.3), coverallMat);
+    torso.position.y = 1.12;
+    torso.castShadow = true;
+    this.mesh.add(torso);
+
+    // Embroidered "JONAH" name patch on left breast
+    const patch = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 0.02), badgeMat);
+    patch.position.set(-0.16, 1.28, 0.16);
+    this.mesh.add(patch);
+
+    // Heavy Leather Toolbelt with pockets
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.12, 0.34), beltMat);
+    belt.position.y = 0.78;
+    this.mesh.add(belt);
+
+    // Hanging socket wrench on belt loop
+    const hangingWrench = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.24, 0.04), toolMat);
+    hangingWrench.position.set(-0.24, 0.72, 0.18);
+    hangingWrench.rotation.z = -0.2;
+    this.mesh.add(hangingWrench);
+
+    // 2. Head with Stubble & Mechanic Cap
+    const headGroup = new THREE.Group();
+    headGroup.position.y = 1.66;
+
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.26), skinMat);
+    head.castShadow = true;
+    headGroup.add(head);
+
+    // Mechanic baseball cap
+    const capDome = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.28), capMat);
+    capDome.position.y = 0.14;
+    headGroup.add(capDome);
+
+    const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.03, 0.14), capMat);
+    capVisor.position.set(0, 0.1, 0.18);
+    headGroup.add(capVisor);
+
+    this.mesh.add(headGroup);
+
+    // 3. Arms
+    const armGeo = new THREE.BoxGeometry(0.18, 0.65, 0.18);
+
+    // Left Arm (hanging at side)
+    const leftArm = new THREE.Group();
+    leftArm.position.set(-0.38, 1.4, 0);
+    const leftArmMesh = new THREE.Mesh(armGeo, coverallMat);
+    leftArmMesh.position.y = -0.3;
+    leftArmMesh.castShadow = true;
+    leftArm.add(leftArmMesh);
+    const leftHand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.12), skinMat);
+    leftHand.position.y = -0.65;
+    leftArm.add(leftHand);
+    this.mesh.add(leftArm);
+
+    // Right Arm (raised forward holding heavy torque wrench)
+    const rightArm = new THREE.Group();
+    rightArm.position.set(0.38, 1.4, 0);
+    const rightArmMesh = new THREE.Mesh(armGeo, coverallMat);
+    rightArmMesh.position.y = -0.3;
+    rightArmMesh.rotation.x = -0.6; // Angled forward
+    rightArmMesh.castShadow = true;
+    rightArm.add(rightArmMesh);
+
+    const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.12), skinMat);
+    rightHand.position.set(0, -0.6, 0.15);
+    rightArm.add(rightHand);
+
+    // Heavy-Duty Torque Wrench
+    const wrenchShaft = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.42, 0.05), toolMat);
+    wrenchShaft.position.set(0, -0.55, 0.25);
+    wrenchShaft.rotation.x = 0.5;
+    rightArm.add(wrenchShaft);
+
+    const wrenchHead = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.1), toolMat);
+    wrenchHead.position.set(0, -0.38, 0.35);
+    rightArm.add(wrenchHead);
+
+    this.mesh.add(rightArm);
+
+    // 4. Legs with Knee Patches & Work Boots
+    const legGeo = new THREE.BoxGeometry(0.2, 0.7, 0.2);
+
+    this.leftLeg = new THREE.Group();
+    this.leftLeg.position.set(-0.16, 0.7, 0);
+    const leftLegMesh = new THREE.Mesh(legGeo, coverallMat);
+    leftLegMesh.position.y = -0.35;
+    this.leftLeg.add(leftLegMesh);
+    const leftBoot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.15, 0.28), bootsMat);
+    leftBoot.position.set(0, -0.68, 0.04);
+    this.leftLeg.add(leftBoot);
+    this.mesh.add(this.leftLeg);
+
+    this.rightLeg = new THREE.Group();
+    this.rightLeg.position.set(0.16, 0.7, 0);
+    const rightLegMesh = new THREE.Mesh(legGeo, coverallMat);
+    rightLegMesh.position.y = -0.35;
+    this.rightLeg.add(rightLegMesh);
+    const rightBoot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.15, 0.28), bootsMat);
+    rightBoot.position.set(0, -0.68, 0.04);
+    this.rightLeg.add(rightBoot);
     this.mesh.add(this.rightLeg);
   }
 
@@ -194,13 +313,13 @@ export class NPCManager {
     });
     this.npcs.push(mrsGable);
 
-    // 2. Story NPC: Jonah Reyes at Adrian's Auto Repair garage
+    // 2. Story NPC: Jonah Reyes at Adrian's Auto Repair garage forecourt
     const jonahReyes = new NPC(this.scene, {
       id: 'jonah_reyes',
       name: 'Jonah Reyes',
       isStoryNPC: true,
-      position: new THREE.Vector3(-58, 0, 64),
-      heading: 0,
+      position: new THREE.Vector3(-56, 0, 67),
+      heading: Math.PI, // Facing South towards driveway
       dialogue: [
         {
           speaker: 'JONAH REYES',
@@ -216,7 +335,7 @@ export class NPCManager {
         },
         {
           speaker: 'JONAH REYES',
-          text: "Take the side door into the shop. Safe's behind the Aurelia license plates on the back wall. But watch yourself."
+          text: "Hit the wall switch [E] to raise the workshop shutter. Safe's behind the Aurelia license plates on the back wall. But watch yourself."
         }
       ]
     });
@@ -265,7 +384,7 @@ export class NPCManager {
       { pos: new THREE.Vector3(-42, 0, -30), heading: Math.PI / 2 },
       { pos: new THREE.Vector3(-42, 0, 20), heading: -Math.PI / 2 },
       { pos: new THREE.Vector3(8, 0, -80), heading: 0 },
-      { pos: new THREE.Vector3(-55, 0, 65), heading: Math.PI }
+      { pos: new THREE.Vector3(-35, 0, 85), heading: 0 }
     ];
 
     pedestrianSpawns.forEach((spawn, idx) => {
