@@ -51,6 +51,16 @@ export class MissionManager {
     }
   }
 
+  public jumpToObjective(index: number): void {
+    if (!this.currentMission) return;
+    this.currentObjectiveIndex = Math.max(0, Math.min(index, this.currentMission.objectives.length - 1));
+    for (let i = 0; i < this.currentObjectiveIndex; i++) {
+      this.currentMission.objectives[i].isCompleted = true;
+    }
+    const nextObj = this.getCurrentObjective();
+    this.eventBus.emit('mission:objectiveUpdated', { objective: nextObj });
+  }
+
   public completeMission(): void {
     if (!this.currentMission) return;
     const mission = this.currentMission;

@@ -513,6 +513,10 @@ export class HUD {
     this.narrationTextEl.innerText = `"${text}"`;
   }
 
+  public showNotification(text: string): void {
+    this.showNarration('DEV CONSOLE', text);
+  }
+
   public hideNarration(): void {
     if (!this.narrationBarEl) return;
     this.narrationBarEl.classList.add('hidden');
@@ -771,6 +775,16 @@ export class HUD {
       this.hideWasted();
       onRespawn();
     }, 3200);
+  }
+
+  public setWantedStars(count: number): void {
+    this.wantedStars.forEach((star, idx) => {
+      if (idx < count) {
+        star.classList.add('active');
+      } else {
+        star.classList.remove('active');
+      }
+    });
   }
 
   public hideWasted(): void {

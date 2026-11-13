@@ -22,6 +22,7 @@ import { createMission05Data } from '../missions/data/M05_TheJournalist.ts';
 import { DestinationMarker } from '../world/DestinationMarker.ts';
 import { NarrationManager } from '../audio/NarrationManager.ts';
 import { PauseMenu } from '../ui/PauseMenu.ts';
+import { DebugMenu } from '../ui/DebugMenu.ts';
 
 export class Game {
   public scene: THREE.Scene;
@@ -36,6 +37,7 @@ export class Game {
   public dialogueMgr: DialogueManager;
   public narrationMgr: NarrationManager;
   public pauseMenu: PauseMenu;
+  public debugMenu: DebugMenu;
   public hud: HUD;
   public input: InputManager;
   public audio: AudioManager;
@@ -45,7 +47,7 @@ export class Game {
   public destinationMarker: DestinationMarker;
 
   // Interior apartment state for M01
-  private isInApartmentInterior: boolean = false;
+  public isInApartmentInterior: boolean = false;
   private apartmentDoorPos: THREE.Vector3 = new THREE.Vector3(30, 0, -28);
   private apartmentDeskPos: THREE.Vector3 = new THREE.Vector3(297.2, 0, -302.2);
   private apartmentExitDoorPos: THREE.Vector3 = new THREE.Vector3(300, 0, -296.8);
@@ -102,16 +104,19 @@ export class Game {
       }
     );
 
+    this.debugMenu = new DebugMenu(this);
+
     this.setupEventListeners();
     this.setupStartScreen();
     (window as any).createMission02Data = createMission02Data;
+    (window as any).debugMenu = this.debugMenu;
   }
 
   private setupEventListeners(): void {
     // Pointer lock toggle: unlock triggers pause menu
     this.input.setPointerLockCallback((isLocked) => {
       if (!isLocked && !this.player.isDead && (this.state.getState() === GameMode.FREE_ROAM || this.state.getState() === GameMode.MISSION_ACTIVE || this.state.getState() === GameMode.IN_VEHICLE)) {
-        if (!this.dialogueMgr.isActive && !this.pauseMenu.isOpen() && !this.hud.isEvidenceOpen) {
+        if (!this.dialogueMgr.isActive && !this.pauseMenu.isOpen() && !this.hud.isEvidenceOpen && !this.debugMenu.isOpen()) {
           this.state.setState(GameMode.PAUSED);
           this.pauseMenu.open('map');
         }
@@ -267,7 +272,23 @@ export class Game {
   }
 
   public update(deltaTime: number): void {
-    // 0. Check Pause / Map / Controls hotkeys
+    // 0. Check Developer Debug Menu hotkeys (F2 / Backquote)
+    if (this.input.isKeyPressed('F2') || this.input.isKeyPressed('Backquote')) {
+      this.debugMenu.toggle();
+      return;
+    }
+
+    if (this.debugMenu.isOpen()) {
+      if (this.input.isKeyPressed('Escape')) {
+        this.debugMenu.close();
+        return;
+      }
+      this.debugMenu.updateLiveCoords(this.player.position, this.player.heading);
+      this.input.update();
+      return;
+    }
+
+    // 1. Check Pause / Map / Controls hotkeys
     if (this.input.isKeyPressed('Escape') || this.input.isKeyPressed('KeyP')) {
       if (this.hud.isEvidenceOpen) {
         this.hud.hideEvidence();

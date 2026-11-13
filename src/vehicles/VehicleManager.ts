@@ -298,4 +298,50 @@ export class VehicleManager {
 
     this.eventBus.emit('player:exitVehicle', { vehicle: veh });
   }
+
+  public spawnVehicleAt(
+    type: 'vesper_sedan' | 'police_cruiser' | 'metro_coupe',
+    pos: THREE.Vector3,
+    heading: number = 0
+  ): Vehicle {
+    let cfg: VehicleConfig = {
+      id: 'vesper_sedan_' + Date.now(),
+      name: 'VESPER SEDAN',
+      maxSpeed: 28,
+      acceleration: 14.5,
+      reverseSpeed: 8,
+      braking: 22,
+      turnSpeed: 1.8,
+      color: 0x6b1a26
+    };
+
+    if (type === 'police_cruiser') {
+      cfg = {
+        id: 'vcpd_cruiser_' + Date.now(),
+        name: 'VCPD PATROL CRUISER',
+        maxSpeed: 34,
+        acceleration: 18,
+        reverseSpeed: 10,
+        braking: 26,
+        turnSpeed: 2.1,
+        color: 0x0f172a
+      };
+    } else if (type === 'metro_coupe') {
+      cfg = {
+        id: 'metro_coupe_' + Date.now(),
+        name: 'METRO SPORT COUPE',
+        maxSpeed: 36,
+        acceleration: 19,
+        reverseSpeed: 11,
+        braking: 25,
+        turnSpeed: 2.2,
+        color: 0x1e3a8a
+      };
+    }
+
+    const vehicle = new Vehicle(this.scene, cfg, pos, this.audio);
+    vehicle.heading = heading;
+    this.vehicles.push(vehicle);
+    return vehicle;
+  }
 }

@@ -31,6 +31,7 @@ export class Player {
   public isInVehicle: boolean = false;
 
   // Stats
+  public isGodMode: boolean = false;
   public isDead: boolean = false;
   public health: number = 100;
   public maxHealth: number = 100;
@@ -643,7 +644,7 @@ export class Player {
   }
 
   public takeDamage(amount: number): void {
-    if (this.isDead) return;
+    if (this.isGodMode || this.isDead) return;
     this.health = Math.max(0, this.health - amount);
     this.eventBus.emit('player:damage', { health: this.health, amount });
     if (this.health <= 0) {

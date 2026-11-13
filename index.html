@@ -43,6 +43,7 @@
           <div class="time-display" id="game-clock">21:45</div>
           <button id="voice-toggle-btn" class="voice-btn" title="Toggle Voice Narration">VOICE: ON</button>
           <button id="pause-menu-btn" class="pause-btn" title="Open System Hub & Map [ESC]">MENU [ESC]</button>
+          <button id="debug-menu-btn" class="dev-btn" title="Developer Debug Console [F2 / ~]">DEV [F2]</button>
         </div>
         <div id="wanted-stars" class="wanted-container">
           <span class="star" data-index="1">★</span>
@@ -459,6 +460,119 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- DEVELOPER DEBUG MENU (Easily removable for release builds)  -->
+    <!-- ============================================================ -->
+    <div id="debug-menu" class="debug-overlay hidden">
+      <div class="debug-panel">
+        <div class="debug-header">
+          <div class="debug-title">
+            <span class="debug-tag">DEV MODE</span>
+            <span>VESPERA MISSION WARP &amp; DEBUG CONSOLE</span>
+          </div>
+          <button id="debug-close-btn" class="debug-close-btn" title="Close Debug Menu [F2 / ESC]">✕ CLOSE [F2]</button>
+        </div>
+
+        <div class="debug-tabs">
+          <button class="debug-tab active" data-tab="missions">MISSIONS &amp; WARP</button>
+          <button class="debug-tab" data-tab="teleport">FAST TRAVEL</button>
+          <button class="debug-tab" data-tab="player">PLAYER &amp; CHEATS</button>
+          <button class="debug-tab" data-tab="world">WORLD &amp; VEHICLES</button>
+        </div>
+
+        <div class="debug-body">
+          <!-- TAB 1: MISSIONS & WARP -->
+          <div id="debug-tab-missions" class="debug-tab-content active">
+            <div class="debug-row">
+              <label for="debug-mission-select">SELECT MISSION:</label>
+              <select id="debug-mission-select" class="debug-select">
+                <option value="M01">M01 // HOME AGAIN (Prologue — Eastline Apartment)</option>
+                <option value="M02">M02 // OLD DEBTS (Act I — Adrian's Garage &amp; Safe)</option>
+                <option value="M03">M03 // THE HARBOR (Act I — Pier 19 Stakeout &amp; Pursuit)</option>
+                <option value="M04">M04 // COLD STORAGE (Act I Finale — Warehouse 19 Infiltration)</option>
+                <option value="M05">M05 // THE JOURNALIST (Act II — Mara Vale &amp; Meridian Tower)</option>
+              </select>
+            </div>
+
+            <div class="debug-row">
+              <label for="debug-objective-select">SELECT OBJECTIVE STAGE:</label>
+              <select id="debug-objective-select" class="debug-select"></select>
+            </div>
+
+            <div class="debug-btn-group">
+              <button id="debug-warp-start-btn" class="debug-btn primary">WARP TO MISSION &amp; START</button>
+              <button id="debug-jump-obj-btn" class="debug-btn secondary">JUMP TO SELECTED OBJECTIVE</button>
+              <button id="debug-advance-obj-btn" class="debug-btn">ADVANCE +1 OBJECTIVE</button>
+              <button id="debug-complete-mission-btn" class="debug-btn success">INSTANT PASS MISSION</button>
+            </div>
+
+            <div class="debug-status-box" id="debug-mission-info">
+              <!-- Live mission information rendered here -->
+            </div>
+          </div>
+
+          <!-- TAB 2: FAST TRAVEL -->
+          <div id="debug-tab-teleport" class="debug-tab-content">
+            <div class="debug-grid" id="debug-teleport-grid">
+              <!-- Teleport location buttons populated by DebugMenu.ts -->
+            </div>
+          </div>
+
+          <!-- TAB 3: PLAYER CHEATS -->
+          <div id="debug-tab-player" class="debug-tab-content">
+            <div class="debug-grid">
+              <button id="debug-godmode-btn" class="debug-btn">GOD MODE: OFF</button>
+              <button id="debug-heal-btn" class="debug-btn">FULL HEALTH &amp; STAMINA</button>
+              <button id="debug-cash-1k-btn" class="debug-btn">GIVE +$1,000 CASH</button>
+              <button id="debug-cash-10k-btn" class="debug-btn">GIVE +$10,000 CASH</button>
+              <button id="debug-weapons-btn" class="debug-btn">GIVE ALL WEAPONS &amp; MAX AMMO</button>
+              <button id="debug-kill-btn" class="debug-btn danger">KILL PLAYER (TEST WASTED)</button>
+            </div>
+
+            <div class="debug-row" style="margin-top: 16px;">
+              <label>SET WANTED LEVEL:</label>
+              <div class="debug-btn-row">
+                <button class="debug-btn-sm" data-wanted="0">0 STARS</button>
+                <button class="debug-btn-sm" data-wanted="1">1 STAR</button>
+                <button class="debug-btn-sm" data-wanted="2">2 STARS</button>
+                <button class="debug-btn-sm" data-wanted="3">3 STARS</button>
+                <button class="debug-btn-sm" data-wanted="5">5 STARS</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: WORLD & SPAWNER -->
+          <div id="debug-tab-world" class="debug-tab-content">
+            <div class="debug-section-title">SPAWN VEHICLE (In Front of Player):</div>
+            <div class="debug-grid">
+              <button id="debug-spawn-vesper-btn" class="debug-btn">SPAWN VESPER SEDAN</button>
+              <button id="debug-spawn-police-btn" class="debug-btn">SPAWN VCPD POLICE CRUISER</button>
+              <button id="debug-spawn-coupe-btn" class="debug-btn">SPAWN METRO SPORT COUPE</button>
+            </div>
+
+            <div class="debug-section-title" style="margin-top: 16px;">TIME OF DAY:</div>
+            <div class="debug-btn-row">
+              <button class="debug-btn-sm" data-time="6.5">DAWN (06:30)</button>
+              <button class="debug-btn-sm" data-time="12.0">NOON (12:00)</button>
+              <button class="debug-btn-sm" data-time="19.0">DUSK (19:00)</button>
+              <button class="debug-btn-sm" data-time="0.0">MIDNIGHT (00:00)</button>
+            </div>
+
+            <div class="debug-section-title" style="margin-top: 16px;">WORLD INTERACTIVE SHUTTERS:</div>
+            <div class="debug-grid">
+              <button id="debug-toggle-garage-shutter-btn" class="debug-btn">OPEN ADRIAN'S GARAGE SHUTTER</button>
+              <button id="debug-toggle-wh-shutter-btn" class="debug-btn">OPEN WAREHOUSE 19 SHUTTER</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="debug-footer">
+          <span id="debug-coords-display">POS: X: 0.0, Y: 0.0, Z: 0.0 | HEADING: 0°</span>
+          <span>PRESS <strong>[F2]</strong> OR <strong>[~]</strong> TO TOGGLE</span>
         </div>
       </div>
     </div>
