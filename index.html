@@ -105,7 +105,7 @@
       <!-- Center Interaction Prompt -->
       <div id="interaction-prompt" class="interaction-card hidden">
         <span class="key-badge" id="prompt-key">E</span>
-        <span class="prompt-text" id="prompt-label">Enter Vehicle</span>
+        <span class="prompt-text" id="prompt-label"><span id="prompt-desc">Enter Vehicle</span></span>
       </div>
 
       <!-- Center Notification Toast -->
@@ -129,13 +129,13 @@
     <div id="evidence-modal" class="modal-overlay hidden">
       <div class="evidence-card">
         <div class="evidence-header">
-          <div class="evidence-title">EVIDENCE COLLECTED: HARBOR PHOTOGRAPH</div>
+          <div class="evidence-title" id="evidence-title">EVIDENCE COLLECTED: HARBOR PHOTOGRAPH</div>
           <button id="close-evidence-btn" class="modal-close-btn">ESC</button>
         </div>
         <div class="evidence-image-container">
           <canvas id="photo-canvas" width="400" height="260"></canvas>
         </div>
-        <div class="evidence-caption">
+        <div class="evidence-caption" id="evidence-caption">
           <strong>Location:</strong> Pier 19, Old Harbor &bull; <strong>Date:</strong> 3 Nights Ago<br>
           <em>The photograph shows Lena Voss speaking to an unidentified man in a dark trench coat next to a black freighter container. On the back, handwritten in Lena's script: "Jonah warned me. Check Adrian's safe."</em>
         </div>
@@ -495,6 +495,9 @@
                 <option value="M03">M03 // THE HARBOR (Act I — Pier 19 Stakeout &amp; Pursuit)</option>
                 <option value="M04">M04 // COLD STORAGE (Act I Finale — Warehouse 19 Infiltration)</option>
                 <option value="M05">M05 // THE JOURNALIST (Act II — Mara Vale &amp; Meridian Tower)</option>
+                <option value="M06">M06 // BAD BUSINESS (Act I — Redevelopment Surveillance &amp; Shell Company)</option>
+                <option value="M07">M07 // OLD FRIENDS (Act I — Jonah's Syndicate Debt &amp; Garage Standoff)</option>
+                <option value="M08">M08 // PAPER TRAIL (Act II Finale — Vespera Municipal Trust Infiltration)</option>
               </select>
             </div>
 

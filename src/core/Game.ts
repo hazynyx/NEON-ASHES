@@ -19,6 +19,9 @@ import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
 import { createMission04Data } from '../missions/data/M04_ColdStorage.ts';
 import { createMission05Data } from '../missions/data/M05_TheJournalist.ts';
+import { createMission06Data } from '../missions/data/M06_BadBusiness.ts';
+import { createMission07Data } from '../missions/data/M07_OldFriends.ts';
+import { createMission08Data } from '../missions/data/M08_PaperTrail.ts';
 import { DestinationMarker } from '../world/DestinationMarker.ts';
 import { NarrationManager } from '../audio/NarrationManager.ts';
 import { PauseMenu } from '../ui/PauseMenu.ts';
@@ -55,6 +58,18 @@ export class Game {
   // Garage safe state for M02
   private garageShutterPos: THREE.Vector3 = new THREE.Vector3(-60, 0, 64);
   private garageSafePos: THREE.Vector3 = new THREE.Vector3(-64, 0, 39);
+
+  // Mission M06: BAD BUSINESS World-State Flags
+  public shellCompanyExposed: boolean = false;
+  public alvarezIdentified: boolean = false;
+
+  // Mission M07: OLD FRIENDS World-State Flags
+  public jonahTrustsKaleb: boolean = false;
+  public marrowHostile: boolean = false;
+  public creditorKilled: boolean = false;
+  public drakeAlliance: boolean = false;
+  public m07Choice: 'A' | 'B' | 'C' | null = null;
+  public m07DebtAmount: number = 2000;
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
@@ -109,6 +124,9 @@ export class Game {
     this.setupEventListeners();
     this.setupStartScreen();
     (window as any).createMission02Data = createMission02Data;
+    (window as any).createMission07Data = createMission07Data;
+    (window as any).createMission08Data = createMission08Data;
+    (window as any).startMission07 = () => this.startMission07();
     (window as any).debugMenu = this.debugMenu;
   }
 
@@ -209,6 +227,88 @@ export class Game {
               )
             );
           }, 800);
+        } else if (mission.id === 'M05') {
+          setTimeout(() => {
+            this.narrationMgr.queueNarrations([
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Albright and Meridian are running an eviction racket in Eastline.",
+                delayAfter: 600
+              },
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Dominic Alvarez is managing the demolition crews on the ground. Time to pay the redevelopment zone a visit.",
+                delayAfter: 500
+              }
+            ]);
+            this.missionMgr.startMission(
+              createMission06Data(
+                this.world.redevelopmentSitePos,
+                this.world.contractorMeetingPos,
+                this.world.shellOfficePos
+              )
+            );
+          }, 800);
+        } else if (mission.id === 'M06') {
+          setTimeout(() => {
+            this.narrationMgr.queueNarrations([
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Apex Land Holdings is the corporate shell behind the Eastline demolition.",
+                delayAfter: 600
+              },
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Incoming distress call from Jonah... Syndicate enforcers are tearing through Adrian's garage.",
+                delayAfter: 500
+              }
+            ]);
+            this.startMission07();
+          }, 800);
+        } else if (mission.id === 'M07') {
+          setTimeout(() => {
+            this.narrationMgr.queueNarrations([
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Jonah's debt is handled. Mara called in new intel on Apex Land Holdings' bank routing.",
+                delayAfter: 600
+              },
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "She's waiting at the Southside Diner patio with the financial filings. Time to trace the money.",
+                delayAfter: 500
+              }
+            ]);
+            this.missionMgr.startMission(
+              createMission08Data(
+                this.world.southsideDinerPos,
+                this.world.financeOfficePos,
+                this.world.financeArchivePos,
+                this.world.financeTerminalPos
+              )
+            );
+          }, 800);
+        } else if (mission.id === 'M08') {
+          setTimeout(() => {
+            this.narrationMgr.queueNarrations([
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Four point two million dollars... Albright and Drake bought half the city with stolen tax funds.",
+                delayAfter: 700
+              },
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Lena didn't run away. She was digging straight into the heart of this syndicate. Now I have the leverage to bring them all down.",
+                delayAfter: 600
+              },
+              {
+                speaker: 'MARA VALE (RADIO)',
+                text: "Kaleb! You got the ledger! This breaks Albright's syndicate wide open. Act II complete!",
+                delayAfter: 600
+              }
+            ]);
+            this.hud.showNotification('CAMPAIGN ACT II COMPLETE — FREE ROAM UNLOCKED');
+          }, 800);
         }
       });
     });
@@ -269,6 +369,17 @@ export class Game {
         this.hud.showControls();
       });
     }
+  }
+
+  public startMission07(): void {
+    const jonahPos = new THREE.Vector3(-56, 0, 67);
+    this.missionMgr.startMission(
+      createMission07Data(
+        this.world.adrianGaragePos,
+        jonahPos,
+        this.world.harborDepotPos
+      )
+    );
   }
 
   public update(deltaTime: number): void {
@@ -490,7 +601,7 @@ export class Game {
         if (dist < 5.0) {
           return { text: "Talk to Mara Vale", key: 'F' };
         }
-      } else if (currentObj.id === 'infiltrate_office') {
+      } else if (currentObj.id === 'infiltrate_office' && this.missionMgr.currentMission?.id === 'M05') {
         const dist = this.player.position.distanceTo(this.world.meridianDeskPos);
         if (dist < 4.5) {
           return { text: "Search Archive Terminal", key: 'E' };
@@ -499,6 +610,70 @@ export class Game {
         const dist = this.player.position.distanceTo(this.world.meridianDeskPos);
         if (dist < 4.5) {
           return { text: "Photograph Zoning Buyout Accord", key: 'E' };
+        }
+      }
+
+      // Mission M06 specific interaction prompts
+      if (currentObj.id === 'photograph_meeting') {
+        const dist = this.player.position.distanceTo(this.world.contractorMeetingPos);
+        if (dist < 4.5) {
+          return { text: 'Photograph Payoff', key: 'E' };
+        }
+      } else if (currentObj.id === 'identify_shell_company') {
+        const dist = this.player.position.distanceTo(this.world.shellOfficePos);
+        if (dist < 3.5) {
+          return { text: 'Inspect Directory Plaque', key: 'E' };
+        }
+      }
+
+      // Mission M07 specific interaction prompts
+      if (currentObj.id === 'talk_to_jonah' && this.missionMgr.currentMission?.id === 'M07') {
+        const jonahPos = currentObj.targetPosition || new THREE.Vector3(-56, 0, 67);
+        if (this.player.position.distanceTo(jonahPos) < 5.0) {
+          return { text: 'Talk to Jonah Reyes', key: 'E' };
+        }
+      } else if (currentObj.id === 'resolve_debt_choice') {
+        const jonahPos = currentObj.targetPosition || new THREE.Vector3(-56, 0, 67);
+        if (this.player.position.distanceTo(jonahPos) < 6.0) {
+          return { text: '[1] Pay Debt  [2] Threaten  [3] Drake Job', key: '1-3' };
+        }
+      } else if (currentObj.id === 'retrieve_drake_package') {
+        const depotPos = currentObj.targetPosition || this.world.harborDepotPos;
+        if (this.player.position.distanceTo(depotPos) < 5.0) {
+          return { text: 'Collect Contraband Package', key: 'E' };
+        }
+      } else if (currentObj.id === 'debrief_jonah') {
+        const debriefPos = currentObj.targetPosition || new THREE.Vector3(-56, 0, 67);
+        const workshopInsidePos = new THREE.Vector3(-58, 0, 52);
+        const dist = Math.min(
+          this.player.position.distanceTo(debriefPos),
+          this.player.position.distanceTo(workshopInsidePos)
+        );
+        if (dist < 6.0) {
+          return { text: 'Speak with Jonah', key: 'E' };
+        }
+      }
+
+      // Mission M08 specific interaction prompts
+      if (currentObj.id === 'meet_mara') {
+        const dist = this.player.position.distanceTo(this.world.southsideDinerPos);
+        if (dist < 5.0) {
+          return { text: "Speak with Mara Vale", key: 'F' };
+        }
+      } else if (currentObj.id === 'infiltrate_office' && this.missionMgr.currentMission?.id === 'M08') {
+        const dist = this.player.position.distanceTo(this.world.financeOfficePos);
+        if (dist < 5.0) {
+          return { text: "Infiltrate Office Suite", key: 'E' };
+        }
+      } else if (currentObj.id === 'inspect_documents') {
+        const dist = this.player.position.distanceTo(this.world.financeArchivePos);
+        if (dist < 4.5) {
+          return { text: "Search Filing Cabinets", key: 'E' };
+        }
+      } else if (currentObj.id === 'obtain_records') {
+        const dist = this.player.position.distanceTo(this.world.financeTerminalPos);
+        if (dist < 4.5) {
+          return { text: "Download Wire Transfer Ledger", key: 'E' };
         }
       }
     }
@@ -818,8 +993,8 @@ export class Game {
       }
     }
 
-    // Objective: escape_perimeter
-    if (currentObj.id === 'escape_perimeter') {
+    // Objective: escape_perimeter (M04)
+    if (currentObj.id === 'escape_perimeter' && this.missionMgr.currentMission?.id === 'M04') {
       const distFromPier = this.player.position.distanceTo(this.world.pier19Pos);
       if (this.player.isInVehicle && distFromPier > 95.0) {
         this.missionMgr.advanceObjective(); // Completes M04!
@@ -854,8 +1029,8 @@ export class Game {
       }
     }
 
-    // Objective: infiltrate_office
-    if (currentObj.id === 'infiltrate_office') {
+    // Objective: infiltrate_office (M05)
+    if (currentObj.id === 'infiltrate_office' && this.missionMgr.currentMission?.id === 'M05') {
       const dist = this.player.position.distanceTo(this.world.meridianDeskPos);
       if (dist < 4.2 && this.input.isKeyPressed('KeyE')) {
         this.audio.playUIClick();
@@ -905,6 +1080,434 @@ export class Game {
             this.missionMgr.advanceObjective(); // Completes M05!
           });
         }
+      }
+    }
+
+    // --- M06 Handlers (BAD BUSINESS) ---
+    // Objective 1: observe_redevelopment
+    if (currentObj.id === 'observe_redevelopment') {
+      const dist = this.player.position.distanceTo(this.world.redevelopmentSitePos);
+      if (dist < 8.0) {
+        this.narrationMgr.queueNarrations([
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "Mara wasn't exaggerating. Half the block is boarded up, and Alvarez's crews are tearing down the rest.",
+            delayAfter: 500
+          }
+        ]);
+        this.missionMgr.advanceObjective(); // Proceed to follow_contractor
+      }
+    }
+
+    // Objective 2: follow_contractor
+    if (currentObj.id === 'follow_contractor') {
+      const dist = this.player.position.distanceTo(this.world.contractorMeetingPos);
+      if (dist < 5.0) {
+        this.missionMgr.advanceObjective(); // Proceed to photograph_meeting
+      }
+    }
+
+    // Objective 3: photograph_meeting
+    if (currentObj.id === 'photograph_meeting') {
+      const dist = this.player.position.distanceTo(this.world.contractorMeetingPos);
+      if (dist < 4.5 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playUIClick();
+        this.input.exitPointerLock();
+        this.hud.showEvidence('contractor_payoff', () => {
+          this.input.requestPointerLock();
+          this.dialogueMgr.startDialogue([
+            {
+              speaker: 'DOMINIC ALVAREZ',
+              text: "The tenants in 402 and 404 refused the buyout. We had to cut their water lines."
+            },
+            {
+              speaker: 'SYNDICATE OPERATIVE',
+              text: "Councilman Albright wants that building cleared by Friday. Here's your bonus. Report back to the Apex office."
+            }
+          ], () => {
+            this.narrationMgr.queueNarrations([
+              {
+                speaker: 'KALEB (INTERNAL)',
+                text: "Apex office... Alvarez is heading to his truck. Don't lose him.",
+                delayAfter: 500
+              }
+            ]);
+            this.missionMgr.advanceObjective(); // Proceed to follow_vehicle
+          });
+        });
+      }
+    }
+
+    // Objective 4: follow_vehicle
+    if (currentObj.id === 'follow_vehicle') {
+      const dist = this.player.position.distanceTo(this.world.shellOfficePos);
+      if (dist < 14.0) {
+        this.narrationMgr.queueNarrations([
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "Alvarez pulled up outside this corporate front. Let's see what company name is on the directory plaque.",
+            delayAfter: 500
+          }
+        ]);
+        this.missionMgr.advanceObjective(); // Proceed to identify_shell_company
+      }
+    }
+
+    // Objective 5: identify_shell_company
+    if (currentObj.id === 'identify_shell_company') {
+      const dist = this.player.position.distanceTo(this.world.shellOfficePos);
+      if (dist < 3.5 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playUIClick();
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "'Apex Land Holdings LLC'. Registered three months ago. Same corporate address as Meridian Properties."
+          },
+          {
+            speaker: 'MARA VALE (RADIO)',
+            text: "Kaleb! Syndicate lookouts just spotted your vehicle! Clear the area immediately!"
+          }
+        ], () => {
+          this.missionMgr.advanceObjective(); // Proceed to escape_surveillance
+        });
+      }
+    }
+
+    // Objective 6: escape_surveillance
+    if (currentObj.id === 'escape_surveillance') {
+      const distFromOffice = this.player.position.distanceTo(this.world.shellOfficePos);
+      if (distFromOffice > 70.0) {
+        this.shellCompanyExposed = true;
+        this.alvarezIdentified = true;
+        this.missionMgr.advanceObjective(); // Completes M06!
+      }
+    }
+
+    // --- M07 Handlers (OLD FRIENDS) ---
+    // Objective 1: talk_to_jonah
+    if (currentObj.id === 'talk_to_jonah' && this.missionMgr.currentMission?.id === 'M07') {
+      const jonahPos = currentObj.targetPosition || new THREE.Vector3(-56, 0, 67);
+      const dist = this.player.position.distanceTo(jonahPos);
+      if (dist < 5.0 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playUIClick();
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'JONAH REYES',
+            text: "Kaleb! Thank god you made it. Sal and his Marrow Syndicate enforcers are here to shake down the garage."
+          },
+          {
+            speaker: 'JONAH REYES',
+            text: `They claim I owe $${this.m07DebtAmount} for black-market parts from Pier 19. If I don't pay up today, they're burning Adrian's shop to the ground.`
+          },
+          {
+            speaker: 'KALEB VOSS',
+            text: "We have options, Jonah. I can pay Sal off, settle this in lead, or Vincent Drake offered a contraband job at Harbor Depot that clears your debt."
+          }
+        ], () => {
+          this.missionMgr.advanceObjective(); // Advance to resolve_debt_choice
+        });
+      }
+    }
+
+    // Objective 2: resolve_debt_choice
+    if (currentObj.id === 'resolve_debt_choice') {
+      const isChoiceA = this.input.isKeyPressed('Digit1') || this.input.isKeyPressed('Key1') || this.input.isKeyPressed('Numpad1');
+      const isChoiceB = this.input.isKeyPressed('Digit2') || this.input.isKeyPressed('Key2') || this.input.isKeyPressed('Numpad2');
+      const isChoiceC = this.input.isKeyPressed('Digit3') || this.input.isKeyPressed('Key3') || this.input.isKeyPressed('Numpad3');
+
+      if (isChoiceA) {
+        this.input.consumeKey('Digit1');
+        this.input.consumeKey('Key1');
+        this.input.consumeKey('Numpad1');
+        this.audio.playUIClick();
+
+        if (this.player.cash >= this.m07DebtAmount) {
+          this.player.cash -= this.m07DebtAmount;
+          this.jonahTrustsKaleb = true;
+          this.m07Choice = 'A';
+          this.hud.showNotification(`Paid Jonah's Debt: -$${this.m07DebtAmount}`);
+          this.dialogueMgr.startDialogue([
+            {
+              speaker: 'KALEB VOSS',
+              text: `Here's your money, Sal. All $${this.m07DebtAmount}. Take it and walk away from Adrian's shop.`
+            },
+            {
+              speaker: 'SAL (MARROW ENFORCER)',
+              text: "Smart move, Voss. The debt is settled. Jonah, you're off the hook... for now."
+            },
+            {
+              speaker: 'JONAH REYES',
+              text: "Kaleb... you didn't have to spend your own money on my mistake. Come inside the workshop, let's talk."
+            }
+          ], () => {
+            this.world.openGarageShutter();
+            this.missionMgr.jumpToObjective(6); // Jump to debrief_jonah
+          });
+        } else {
+          this.hud.showNotification(`INSUFFICIENT FUNDS: $${this.m07DebtAmount} required!`);
+          this.narrationMgr.queueNarrations([
+            {
+              speaker: 'KALEB (INTERNAL)',
+              text: `I don't have enough cash. I need $${this.m07DebtAmount} to pay off Sal. Threaten him or take Drake's job instead.`,
+              delayAfter: 500
+            }
+          ]);
+        }
+      } else if (isChoiceB) {
+        this.input.consumeKey('Digit2');
+        this.input.consumeKey('Key2');
+        this.input.consumeKey('Numpad2');
+        this.audio.playUIClick();
+
+        this.m07Choice = 'B';
+        this.enemyMgr.spawnEnemies([
+          new THREE.Vector3(-54, 0, 72),
+          new THREE.Vector3(-58, 0, 74),
+          new THREE.Vector3(-62, 0, 71)
+        ]);
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'KALEB VOSS',
+            text: "You take one more step toward this garage, Sal, and you leave in a body bag."
+          },
+          {
+            speaker: 'SAL (MARROW ENFORCER)',
+            text: "Tough guy, huh? Gun them both down and trash the place!"
+          }
+        ], () => {
+          this.missionMgr.jumpToObjective(3); // Jump to eliminate_enforcers
+        });
+      } else if (isChoiceC) {
+        this.input.consumeKey('Digit3');
+        this.input.consumeKey('Key3');
+        this.input.consumeKey('Numpad3');
+        this.audio.playUIClick();
+
+        this.m07Choice = 'C';
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'KALEB VOSS',
+            text: "Hold on, Sal. Vincent Drake has a locked contraband cache at the Harbor Depot. I retrieve it for Drake, Drake settles Jonah's tab."
+          },
+          {
+            speaker: 'SAL (MARROW ENFORCER)',
+            text: "Drake's word is good with the boss. Retrieve the package from the Harbor Depot fenced cache and bring it back here. We'll be waiting."
+          }
+        ], () => {
+          this.missionMgr.jumpToObjective(4); // Jump to retrieve_drake_package
+        });
+      }
+    }
+
+    // Objective 3: eliminate_enforcers (Branch B)
+    if (currentObj.id === 'eliminate_enforcers') {
+      if (this.enemyMgr.areAllDead()) {
+        this.marrowHostile = true;
+        this.creditorKilled = true;
+        this.world.openGarageShutter();
+        this.narrationMgr.queueNarrations([
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "Sal and his enforcers are neutralized. Marrow will want revenge, but the garage is safe. Time to check on Jonah inside.",
+            delayAfter: 500
+          }
+        ]);
+        this.missionMgr.jumpToObjective(6); // Jump to debrief_jonah
+      }
+    }
+
+    // Objective 4: retrieve_drake_package (Branch C)
+    if (currentObj.id === 'retrieve_drake_package') {
+      const dist = this.player.position.distanceTo(this.world.harborDepotPos);
+      if (dist < 4.5 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playUIClick();
+        this.hud.showNotification("Contraband Package Collected!");
+        this.narrationMgr.queueNarrations([
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "Got Drake's contraband locker. Heavy crate with Marrow shipping stamps. Back to Adrian's garage.",
+            delayAfter: 500
+          }
+        ]);
+        this.missionMgr.advanceObjective(); // Advance to return_to_garage (Objective 5)
+      }
+    }
+
+    // Objective 5: return_to_garage (Branch C)
+    if (currentObj.id === 'return_to_garage') {
+      const dist = this.player.position.distanceTo(this.world.adrianGaragePos);
+      if (dist < 15.0) {
+        this.drakeAlliance = true;
+        this.world.openGarageShutter();
+        this.missionMgr.advanceObjective(); // Advance to debrief_jonah (Objective 6)
+      }
+    }
+
+    // Objective 6: debrief_jonah
+    if (currentObj.id === 'debrief_jonah') {
+      const debriefPos = currentObj.targetPosition || new THREE.Vector3(-56, 0, 67);
+      const workshopInsidePos = new THREE.Vector3(-58, 0, 52);
+      const dist = Math.min(
+        this.player.position.distanceTo(debriefPos),
+        this.player.position.distanceTo(workshopInsidePos)
+      );
+
+      if (dist < 6.0 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playUIClick();
+        this.world.openGarageShutter();
+
+        let debriefText = "Thanks for having my back, Kaleb. Adrian would be proud of you. Here's your share of workshop reserves.";
+        if (this.jonahTrustsKaleb) {
+          debriefText = "You paid off my debt out of your own pocket... I won't forget that, Kaleb. Take Adrian's custom shotgun ammo from the workbench.";
+        } else if (this.marrowHostile) {
+          debriefText = "Sal and his goons are dead. Marrow will be out for blood, but the garage is safe. Take whatever ammunition we have in the back.";
+        } else if (this.drakeAlliance) {
+          debriefText = "Drake's package cleared the debt completely. Vincent Drake says you've got standing respect at his docks. Take the gear in the back.";
+        }
+
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'JONAH REYES',
+            text: debriefText
+          },
+          {
+            speaker: 'KALEB VOSS',
+            text: "Take care of the shop, Jonah. We're going to finish what Adrian started."
+          }
+        ], () => {
+          this.missionMgr.completeMission();
+        });
+      }
+    }
+
+    // --- M08 Handlers (PAPER TRAIL) ---
+    // Objective 1: meet_mara
+    if (currentObj.id === 'meet_mara') {
+      const dist = this.player.position.distanceTo(this.world.southsideDinerPos);
+      if (dist < 5.0 && this.input.isKeyPressed('KeyF')) {
+        this.input.consumeKey('KeyF');
+        this.dialogueMgr.startDialogue([
+          {
+            speaker: 'MARA VALE',
+            text: "I cross-referenced the corporate registration for Apex Land Holdings. It leads directly to Vespera Municipal Trust on 5th Avenue."
+          },
+          {
+            speaker: 'KALEB',
+            text: "A trust fund holding real estate?"
+          },
+          {
+            speaker: 'MARA VALE',
+            text: "It's an offshore clearinghouse. Councilman Albright and Marrow Syndicate front corporations wire millions through their executive terminal every month. If you can get into that office and copy their transaction ledger, we can prove the whole conspiracy."
+          },
+          {
+            speaker: 'KALEB',
+            text: "I'll infiltrate their archive and download the wire transfers. Stay on the radio."
+          }
+        ], () => {
+          this.missionMgr.advanceObjective(); // Proceeds to drive_to_finance_office
+        });
+      }
+    }
+
+    // Objective 2: drive_to_finance_office
+    if (currentObj.id === 'drive_to_finance_office') {
+      const dist = this.player.position.distanceTo(this.world.financeOfficePos);
+      if (dist <= 8.0) {
+        this.missionMgr.advanceObjective(); // Proceeds to infiltrate_office
+      }
+    }
+
+    // Objective 3: infiltrate_office
+    if (currentObj.id === 'infiltrate_office' && this.missionMgr.currentMission?.id === 'M08') {
+      const dist = this.player.position.distanceTo(this.world.financeOfficePos);
+      if (dist < 5.0 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playDoorSlam();
+
+        // Shift lighting to security night mode
+        this.lighting.timeOfDay = 23.5;
+
+        this.narrationMgr.queueNarrations([
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "Inside. The office is locked down in night security mode. Filing archives are down the corridor.",
+            delayAfter: 500
+          }
+        ]);
+
+        this.missionMgr.advanceObjective(); // Proceeds to inspect_documents
+      }
+    }
+
+    // Objective 4: inspect_documents
+    if (currentObj.id === 'inspect_documents') {
+      const dist = this.player.position.distanceTo(this.world.financeArchivePos);
+      if (dist < 4.5 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playUIClick();
+
+        this.narrationMgr.queueNarrations([
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "Apex Land Holdings, Redwater Development Corp, Harbor Wharfage Ltd... All registered to the same offshore trust account: 'Black Ledger Fund #4'.",
+            delayAfter: 500
+          },
+          {
+            speaker: 'KALEB (INTERNAL)',
+            text: "The executive terminal on the desk has the complete routing logs. That's our target.",
+            delayAfter: 500
+          }
+        ]);
+
+        this.missionMgr.advanceObjective(); // Proceeds to obtain_records
+      }
+    }
+
+    // Objective 5: obtain_records
+    if (currentObj.id === 'obtain_records') {
+      const dist = this.player.position.distanceTo(this.world.financeTerminalPos);
+      if (dist < 4.5 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
+        this.audio.playUIClick();
+        this.audio.playRadioClick();
+
+        // Spawn arriving Vespera Security Patrol
+        this.enemyMgr.clear();
+        this.enemyMgr.spawnEnemies([
+          new THREE.Vector3(-30, 0, -125),
+          new THREE.Vector3(-40, 0, -125)
+        ]);
+
+        // Show Evidence Modal
+        this.input.exitPointerLock();
+        this.hud.showEvidence('black_ledger_wire', () => {
+          this.input.requestPointerLock();
+          this.missionMgr.advanceObjective(); // Proceeds to escape_perimeter
+
+          this.dialogueMgr.startDialogue([
+            {
+              speaker: 'VESPERA SECURITY',
+              text: "Terminal breach detected in executive archives! Lockdown the block and search all exits!"
+            },
+            {
+              speaker: 'KALEB',
+              text: "The data download triggered their alarms. Time to clear the district."
+            }
+          ]);
+        });
+      }
+    }
+
+    // Objective 6: escape_perimeter
+    if (currentObj.id === 'escape_perimeter' && this.missionMgr.currentMission?.id === 'M08') {
+      const distFromOffice = this.player.position.distanceTo(this.world.financeOfficePos);
+      if (distFromOffice > 75.0) {
+        this.missionMgr.advanceObjective(); // Completes M08!
       }
     }
   }

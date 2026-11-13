@@ -6,6 +6,9 @@ import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
 import { createMission04Data } from '../missions/data/M04_ColdStorage.ts';
 import { createMission05Data } from '../missions/data/M05_TheJournalist.ts';
+import { createMission06Data } from '../missions/data/M06_BadBusiness.ts';
+import { createMission07Data } from '../missions/data/M07_OldFriends.ts';
+import { createMission08Data } from '../missions/data/M08_PaperTrail.ts';
 
 interface MissionDef {
   id: string;
@@ -300,6 +303,183 @@ export class DebugMenu {
             heading: Math.PI
           }
         ]
+      },
+      M06: {
+        id: 'M06',
+        name: 'BAD BUSINESS (Act I // Eastline Redevelopment Surveillance)',
+        createData: (g) =>
+          createMission06Data(
+            g.world.redevelopmentSitePos,
+            g.world.contractorMeetingPos,
+            g.world.shellOfficePos
+          ),
+        stages: [
+          {
+            id: 'observe_redevelopment',
+            label: '1. Observe Redevelopment Overlook',
+            warpPos: new THREE.Vector3(45, 0, -65),
+            heading: 0
+          },
+          {
+            id: 'follow_contractor',
+            label: '2. Follow Contractor through Yard',
+            warpPos: new THREE.Vector3(60, 0, -110),
+            heading: -Math.PI / 4
+          },
+          {
+            id: 'photograph_meeting',
+            label: '3. Photograph Contractor Bribe Payoff',
+            warpPos: new THREE.Vector3(71, 0, -116),
+            heading: 0
+          },
+          {
+            id: 'follow_vehicle',
+            label: '4. Tail Alvarez Vehicle to Shell Office',
+            warpPos: new THREE.Vector3(-25, 0, -110),
+            heading: Math.PI
+          },
+          {
+            id: 'identify_shell_company',
+            label: '5. Inspect Apex Directory Plaque',
+            warpPos: new THREE.Vector3(-24, 0, -139),
+            heading: 0
+          },
+          {
+            id: 'escape_surveillance',
+            label: '6. Escape Surveillance Perimeter',
+            warpPos: new THREE.Vector3(-25, 0, -145),
+            heading: Math.PI
+          }
+        ]
+      },
+      M07: {
+        id: 'M07',
+        name: 'OLD FRIENDS (Act I // Jonah Reyes Debt & Marrow Syndicate)',
+        createData: (g) =>
+          createMission07Data(
+            g.world.adrianGaragePos,
+            new THREE.Vector3(-56, 0, 67),
+            g.world.harborDepotPos
+          ),
+        stages: [
+          {
+            id: 'drive_to_garage',
+            label: '1. Drive to Adrian Voss Auto Repair',
+            warpPos: new THREE.Vector3(-60, 0, 85),
+            heading: 0
+          },
+          {
+            id: 'talk_to_jonah',
+            label: '2. Confront Jonah Outside Workshop',
+            warpPos: new THREE.Vector3(-56, 0, 69.2),
+            heading: 0
+          },
+          {
+            id: 'resolve_debt_choice',
+            label: '3. Debt Resolution Encounter (Choices 1/2/3)',
+            warpPos: new THREE.Vector3(-56, 0, 69.2),
+            heading: 0
+          },
+          {
+            id: 'eliminate_enforcers',
+            label: '4. Branch B: Eliminate Syndicate Enforcers',
+            warpPos: new THREE.Vector3(-58, 0, 64),
+            heading: 0,
+            setup: (g) => {
+              g.m07Choice = 'B';
+              g.enemyMgr.spawnEnemies([
+                new THREE.Vector3(-54, 0, 72),
+                new THREE.Vector3(-58, 0, 74),
+                new THREE.Vector3(-62, 0, 71)
+              ]);
+            }
+          },
+          {
+            id: 'retrieve_drake_package',
+            label: '5. Branch C: Retrieve Drake Package (Harbor Depot)',
+            warpPos: new THREE.Vector3(30, 0, -143),
+            heading: 0,
+            setup: (g) => {
+              g.m07Choice = 'C';
+            }
+          },
+          {
+            id: 'return_to_garage',
+            label: '6. Branch C: Deliver Package to Adrian Garage',
+            warpPos: new THREE.Vector3(-60, 0, 72),
+            heading: 0,
+            setup: (g) => {
+              g.m07Choice = 'C';
+            }
+          },
+          {
+            id: 'debrief_jonah',
+            label: '7. Debrief Jonah Inside Workshop',
+            warpPos: new THREE.Vector3(-58, 0, 52),
+            heading: 0,
+            setup: (g) => {
+              g.world.openGarageShutter();
+            }
+          }
+        ]
+      },
+      M08: {
+        id: 'M08',
+        name: 'PAPER TRAIL (Act II // Financial Records & Office Infiltration)',
+        createData: (g) =>
+          createMission08Data(
+            g.world.southsideDinerPos,
+            g.world.financeOfficePos,
+            g.world.financeArchivePos,
+            g.world.financeTerminalPos
+          ),
+        stages: [
+          {
+            id: 'meet_mara',
+            label: '1. Meet Mara Vale on Diner Patio',
+            warpPos: new THREE.Vector3(48, 0, 48),
+            heading: 0
+          },
+          {
+            id: 'drive_to_finance_office',
+            label: '2. Drive to Vespera Municipal Trust',
+            warpPos: new THREE.Vector3(-35, 0, -115),
+            heading: Math.PI
+          },
+          {
+            id: 'infiltrate_office',
+            label: '3. Infiltrate Side Service Entrance',
+            warpPos: new THREE.Vector3(-35, 0, -132),
+            heading: Math.PI
+          },
+          {
+            id: 'inspect_documents',
+            label: '4. Search Filing Cabinets in Archive',
+            warpPos: new THREE.Vector3(-38, 0, -138),
+            heading: Math.PI,
+            setup: (g) => {
+              g.lighting.timeOfDay = 23.5;
+            }
+          },
+          {
+            id: 'obtain_records',
+            label: '5. Access Executive Terminal & Download Ledger',
+            warpPos: new THREE.Vector3(-33, 0, -140),
+            heading: Math.PI,
+            setup: (g) => {
+              g.lighting.timeOfDay = 23.5;
+            }
+          },
+          {
+            id: 'escape_perimeter',
+            label: '6. Escape Financial District Perimeter (>75m)',
+            warpPos: new THREE.Vector3(-35, 0, -135),
+            heading: 0,
+            setup: (g) => {
+              g.lighting.timeOfDay = 23.5;
+            }
+          }
+        ]
       }
     };
   }
@@ -387,6 +567,24 @@ export class DebugMenu {
         category: 'Central',
         pos: new THREE.Vector3(0, 0, 0),
         heading: 0
+      },
+      {
+        name: 'Eastline Redevelopment Zone',
+        category: 'Eastline',
+        pos: new THREE.Vector3(45, 0, -96),
+        heading: 0
+      },
+      {
+        name: 'Apex Land Holdings (Shell Office)',
+        category: 'Central',
+        pos: new THREE.Vector3(-25, 0, -136),
+        heading: Math.PI
+      },
+      {
+        name: 'Vespera Municipal Trust (M08 Infiltration)',
+        category: 'Central',
+        pos: new THREE.Vector3(-35, 0, -132),
+        heading: Math.PI
       }
     ];
   }
