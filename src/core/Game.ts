@@ -104,12 +104,13 @@ export class Game {
 
     this.setupEventListeners();
     this.setupStartScreen();
+    (window as any).createMission02Data = createMission02Data;
   }
 
   private setupEventListeners(): void {
     // Pointer lock toggle: unlock triggers pause menu
     this.input.setPointerLockCallback((isLocked) => {
-      if (!isLocked && (this.state.getState() === GameMode.FREE_ROAM || this.state.getState() === GameMode.MISSION_ACTIVE || this.state.getState() === GameMode.IN_VEHICLE)) {
+      if (!isLocked && !this.player.isDead && (this.state.getState() === GameMode.FREE_ROAM || this.state.getState() === GameMode.MISSION_ACTIVE || this.state.getState() === GameMode.IN_VEHICLE)) {
         if (!this.dialogueMgr.isActive && !this.pauseMenu.isOpen() && !this.hud.isEvidenceOpen) {
           this.state.setState(GameMode.PAUSED);
           this.pauseMenu.open('map');
@@ -127,12 +128,14 @@ export class Game {
         this.vehicleMgr.exitVehicle(this.player);
       }
 
-      // 3. Deduct medical fee ($100 or current cash)
+      // 3. Close pause menu if open
+      if (this.pauseMenu.isOpen()) {
+        this.pauseMenu.close();
+      }
+
+      // 4. Deduct medical fee ($100 or current cash)
       const medicalFee = Math.min(this.player.cash, 100);
       this.player.cash = Math.max(0, this.player.cash - medicalFee);
-
-      // 4. Release mouse pointer lock during wasted overlay
-      this.input.exitPointerLock();
 
       // 5. Show WASTED overlay with medical invoice and respawn countdown
       this.hud.showWasted(medicalFee, () => {
@@ -140,7 +143,6 @@ export class Game {
         const respawnPos = new THREE.Vector3(30, 0, -22);
         this.player.respawn(respawnPos, 0);
         this.camera.snap(this.player.position, 0, 0.1);
-        this.input.requestPointerLock();
         this.hud.showNarration('METRO CLINIC', `Patient Kaleb discharged. Medical expenses: -$${medicalFee}`);
       });
     });
