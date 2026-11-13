@@ -267,6 +267,13 @@ export class Game {
       }
     }
 
+    // Camera View Mode cycling (GTA 5 style 'V' key)
+    if (this.input.isKeyPressed('KeyV')) {
+      const modeText = this.camera.cycleViewMode();
+      this.audio.playUIClick();
+      this.hud.showViewModeBadge(modeText);
+    }
+
     if (this.state.getState() === GameMode.PAUSED) {
       this.input.update();
       return;

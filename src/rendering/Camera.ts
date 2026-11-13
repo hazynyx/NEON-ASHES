@@ -14,6 +14,11 @@ export class ThirdPersonCamera {
   private interiorDistance: number = 1.85;
   private currentDistance: number = 4.2;
 
+  // View Mode Settings (GTA 5 style cycling with 'V' key)
+  public footViewIndex: number = 1; // 0 = CLOSE, 1 = MEDIUM, 2 = FAR, 3 = FIRST_PERSON
+  public vehicleViewIndex: number = 0; // 0 = CLOSE, 1 = FAR, 2 = HOOD
+  public isFirstPerson: boolean = false;
+
   // Offsets
   private playerOffset: THREE.Vector3 = new THREE.Vector3(0, 1.6, 0); // Eye height
   private aimOffset: THREE.Vector3 = new THREE.Vector3(0.55, 1.5, 0); // Shoulder offset
@@ -55,6 +60,22 @@ export class ThirdPersonCamera {
     this.pitch = Math.max(minPitch, Math.min(maxPitch, this.pitch));
   }
 
+  public cycleViewMode(): string {
+    if (this.isVehicleMode) {
+      this.vehicleViewIndex = (this.vehicleViewIndex + 1) % 3;
+      if (this.vehicleViewIndex === 0) return 'VEHICLE // CLOSE';
+      if (this.vehicleViewIndex === 1) return 'VEHICLE // FAR';
+      return 'VEHICLE // HOOD CAM';
+    } else {
+      this.footViewIndex = (this.footViewIndex + 1) % 4;
+      this.isFirstPerson = this.footViewIndex === 3;
+      if (this.footViewIndex === 0) return 'VIEW // CLOSE';
+      if (this.footViewIndex === 1) return 'VIEW // MEDIUM';
+      if (this.footViewIndex === 2) return 'VIEW // FAR';
+      return 'VIEW // FIRST PERSON';
+    }
+  }
+
   public update(
     targetPos: THREE.Vector3,
     targetHeading: number,
@@ -72,12 +93,42 @@ export class ThirdPersonCamera {
       desiredDist = this.interiorDistance;
       offset = this.interiorOffset;
     } else if (this.isVehicleMode) {
-      desiredDist = this.vehicleDistance;
+      if (this.vehicleViewIndex === 0) {
+        desiredDist = 5.2;
+        offset = new THREE.Vector3(0, 1.65, 0);
+      } else if (this.vehicleViewIndex === 1) {
+        desiredDist = 7.5;
+        offset = new THREE.Vector3(0, 2.1, 0);
+      } else {
+        // HOOD / BUMPER CAM
+        desiredDist = 0.08;
+        const vehFwd = new THREE.Vector3(-Math.sin(targetHeading), 0, -Math.cos(targetHeading));
+        offset = new THREE.Vector3(0, 1.35, 0).addScaledVector(vehFwd, 0.8);
+      }
       // In vehicle mode, gently align camera yaw with vehicle heading if not moving mouse
       const headingDiff = targetHeading - this.yaw;
       // Normalize angle difference to [-PI, PI]
       const normDiff = Math.atan2(Math.sin(headingDiff), Math.cos(headingDiff));
       this.yaw += normDiff * Math.min(1.0, deltaTime * 2.5);
+    } else {
+      // On Foot View Cycling
+      if (this.footViewIndex === 0) {
+        // Close over-the-shoulder
+        desiredDist = 2.4;
+        offset = new THREE.Vector3(0.35, 1.5, 0);
+      } else if (this.footViewIndex === 1) {
+        // Medium default
+        desiredDist = 4.2;
+        offset = new THREE.Vector3(0, 1.6, 0);
+      } else if (this.footViewIndex === 2) {
+        // Far tactical
+        desiredDist = 6.5;
+        offset = new THREE.Vector3(0, 1.85, 0);
+      } else {
+        // First Person (head eyes)
+        desiredDist = 0.08;
+        offset = new THREE.Vector3(0, 1.68, 0.12);
+      }
     }
 
     // Smoothly transition distance

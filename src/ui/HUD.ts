@@ -74,6 +74,10 @@ export class HUD {
   private voiceToggleBtn: HTMLElement;
   public onVoiceToggle: ((enabled: boolean) => void) | null = null;
 
+  // Camera View Badge (GTA 5 Style [V])
+  private cameraViewBadgeEl: HTMLElement;
+  private viewBadgeTimeout: any = null;
+
   constructor() {
     this.missionTrackerEl = document.getElementById('mission-tracker')!;
     this.missionBadgeEl = document.getElementById('mission-badge')!;
@@ -107,6 +111,7 @@ export class HUD {
     this.districtLabelEl = document.getElementById('minimap-district-label');
 
     this.crosshairEl = document.getElementById('crosshair')!;
+    this.cameraViewBadgeEl = document.getElementById('camera-view-badge')!;
 
     this.dialogueBoxEl = document.getElementById('dialogue-box')!;
     this.dialogueSpeakerEl = document.getElementById('dialogue-speaker')!;
@@ -501,6 +506,18 @@ export class HUD {
   public hideNarration(): void {
     if (!this.narrationBarEl) return;
     this.narrationBarEl.classList.add('hidden');
+  }
+
+  public showViewModeBadge(text: string): void {
+    if (!this.cameraViewBadgeEl) return;
+    this.cameraViewBadgeEl.innerText = text;
+    this.cameraViewBadgeEl.classList.remove('hidden');
+    if (this.viewBadgeTimeout) {
+      clearTimeout(this.viewBadgeTimeout);
+    }
+    this.viewBadgeTimeout = setTimeout(() => {
+      this.cameraViewBadgeEl.classList.add('hidden');
+    }, 1600);
   }
 
   // Evidence Modal

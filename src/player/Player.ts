@@ -253,7 +253,23 @@ export class Player {
       this.mesh.visible = false;
       return;
     }
-    this.mesh.visible = true;
+
+    if (camera.isFirstPerson) {
+      this.headMesh.visible = false;
+      this.torsoMesh.visible = false;
+      this.leftArm.visible = false;
+      this.leftLeg.visible = false;
+      this.rightLeg.visible = false;
+      this.rightArm.visible = true;
+    } else {
+      this.mesh.visible = true;
+      this.headMesh.visible = true;
+      this.torsoMesh.visible = true;
+      this.leftArm.visible = true;
+      this.leftLeg.visible = true;
+      this.rightLeg.visible = true;
+      this.rightArm.visible = true;
+    }
 
     // 0. Weapon selection (Keys 1, 2, 3)
     if (input.isKeyPressed('Digit1')) {

@@ -125,6 +125,26 @@ html, body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
+.camera-view-badge {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #f59e0b;
+  border: 1.5px solid #d97706;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 6px 18px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 150;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+  transition: opacity 0.3s ease;
+}
+
 .mission-category-badge {
   font-family: var(--font-display);
   font-size: 11px;
