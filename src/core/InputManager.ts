@@ -90,6 +90,10 @@ export class InputManager {
     return !!this.keysJustPressed.get(code);
   }
 
+  public consumeKey(code: string): void {
+    this.keysJustPressed.delete(code);
+  }
+
   public isMouseButtonDown(btn: number): boolean {
     return !!this.mouseButtons.get(btn);
   }

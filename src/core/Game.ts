@@ -467,6 +467,7 @@ export class Game {
     if (currentObj.id === 'enter_apartment' || (!this.isInApartmentInterior && (currentObj.id === 'search_room' || currentObj.id === 'inspect_photo'))) {
       const dist = this.player.position.distanceTo(this.apartmentDoorPos);
       if (dist < 4.0 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
         if (this.player.isInVehicle) {
           this.vehicleMgr.exitVehicle(this.player);
         }
@@ -495,6 +496,8 @@ export class Game {
             }
           ]);
         }, 500);
+
+        return; // Prevent evaluating exit in the same frame!
       }
     }
 
@@ -502,6 +505,7 @@ export class Game {
     if (!this.isInApartmentInterior && this.missionMgr.completedMissions.has('M01')) {
       const dist = this.player.position.distanceTo(this.apartmentDoorPos);
       if (dist < 3.8 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
         if (this.player.isInVehicle) {
           this.vehicleMgr.exitVehicle(this.player);
         }
@@ -510,6 +514,7 @@ export class Game {
         this.camera.isInteriorMode = true;
         this.player.teleport(this.world.apartmentInterior.spawnPos, Math.PI);
         this.camera.snap(this.player.position, 0, 0.10, this.world.colliders);
+        return;
       }
     }
 
@@ -517,6 +522,7 @@ export class Game {
     if (currentObj.id === 'search_room') {
       const dist = this.player.position.distanceTo(this.apartmentDeskPos);
       if (dist < 3.8 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
         this.audio.playUIClick();
         this.world.apartmentInterior.setFloorboardBeaconVisible(false);
         this.missionMgr.advanceObjective(); // Advances to inspect_photo
@@ -535,13 +541,15 @@ export class Game {
             }
           ]);
         });
+        return;
       }
     }
 
     // Objective: exit_apartment (or general exit when in interior)
     if (this.isInApartmentInterior) {
       const dist = this.player.position.distanceTo(this.apartmentExitDoorPos);
-      if (dist < 3.0 && this.input.isKeyPressed('KeyE')) {
+      if (dist < 2.5 && this.input.isKeyPressed('KeyE')) {
+        this.input.consumeKey('KeyE');
         this.audio.playDoorSlam();
         this.isInApartmentInterior = false;
         this.camera.isInteriorMode = false;
@@ -552,6 +560,7 @@ export class Game {
         if (currentObj.id === 'exit_apartment') {
           this.missionMgr.advanceObjective(); // Completes M01!
         }
+        return;
       }
     }
 

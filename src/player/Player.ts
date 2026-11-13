@@ -101,6 +101,8 @@ export class Player {
   }
 
   public teleport(pos: THREE.Vector3, heading: number): void {
+    this.isInVehicle = false;
+    this.mesh.visible = true;
     this.position.copy(pos);
     this.velocity.set(0, 0, 0);
     this.heading = heading;

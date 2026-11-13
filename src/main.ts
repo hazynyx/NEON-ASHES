@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { Game } from './core/Game.ts';
 import { GameLoop } from './core/GameLoop.ts';
 
@@ -8,6 +9,7 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  (window as any).THREE = THREE;
   const game = new Game(canvas);
   (window as any).game = game;
   const loop = new GameLoop(game);

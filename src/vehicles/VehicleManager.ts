@@ -214,7 +214,7 @@ export class VehicleManager {
     });
 
     // If player is driving, keep player position locked to vehicle
-    if (this.activeVehicle) {
+    if (this.activeVehicle && player.isInVehicle) {
       player.position.copy(this.activeVehicle.position);
     }
   }
