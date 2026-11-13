@@ -46,6 +46,7 @@ export class HUD {
   private dialogueOptionsEl: HTMLElement;
 
   // Evidence Modal
+  public isEvidenceOpen: boolean = false;
   private evidenceModalEl: HTMLElement;
   private evidenceTitleEl: HTMLElement;
   private evidenceCaptionEl: HTMLElement;
@@ -542,6 +543,7 @@ export class HUD {
       this.continueMissionBtn.innerText = 'TAKE PHOTOGRAPH & CONTINUE';
     }
 
+    this.isEvidenceOpen = true;
     this.evidenceModalEl.classList.remove('hidden');
     const handler = () => {
       this.hideEvidence();
@@ -682,6 +684,7 @@ export class HUD {
   }
 
   public hideEvidence(): void {
+    this.isEvidenceOpen = false;
     this.evidenceModalEl.classList.add('hidden');
   }
 

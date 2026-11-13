@@ -110,7 +110,7 @@ export class Game {
     // Pointer lock toggle: unlock triggers pause menu
     this.input.setPointerLockCallback((isLocked) => {
       if (!isLocked && (this.state.getState() === GameMode.FREE_ROAM || this.state.getState() === GameMode.MISSION_ACTIVE || this.state.getState() === GameMode.IN_VEHICLE)) {
-        if (!this.dialogueMgr.isActive && !this.pauseMenu.isOpen()) {
+        if (!this.dialogueMgr.isActive && !this.pauseMenu.isOpen() && !this.hud.isEvidenceOpen) {
           this.state.setState(GameMode.PAUSED);
           this.pauseMenu.open('map');
         }
@@ -239,7 +239,10 @@ export class Game {
   public update(deltaTime: number): void {
     // 0. Check Pause / Map / Controls hotkeys
     if (this.input.isKeyPressed('Escape') || this.input.isKeyPressed('KeyP')) {
-      if (this.pauseMenu.isOpen()) {
+      if (this.hud.isEvidenceOpen) {
+        this.hud.hideEvidence();
+        this.input.requestPointerLock();
+      } else if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
       } else if (this.state.getState() !== GameMode.MAIN_MENU) {
         this.state.setState(GameMode.PAUSED);
@@ -553,7 +556,7 @@ export class Game {
         this.audio.playDoorSlam();
         this.isInApartmentInterior = false;
         this.camera.isInteriorMode = false;
-        const porchPos = new THREE.Vector3(30, 0, -26);
+        const porchPos = new THREE.Vector3(30, 0, -23.5);
         this.player.teleport(porchPos, 0); // Face street (South)
         this.camera.snap(porchPos, Math.PI, 0.15, this.world.colliders); // Camera behind Kaleb looking South
 

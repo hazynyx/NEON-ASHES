@@ -52,7 +52,7 @@ export function createMission01Data(lenaApartmentPos: THREE.Vector3): MissionDat
       },
       {
         id: 'exit_apartment',
-        type: ObjectiveType.GO_TO,
+        type: ObjectiveType.INTERACT,
         description: "Leave Unit 102 and head to Eastline Avenue",
         targetPosition: new THREE.Vector3(300, 0, -296.8),
         targetDistance: 2.5,
