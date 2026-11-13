@@ -31,6 +31,7 @@ export class Player {
   public isInVehicle: boolean = false;
 
   // Stats
+  public isDead: boolean = false;
   public health: number = 100;
   public maxHealth: number = 100;
   public stamina: number = 100;
@@ -251,6 +252,33 @@ export class Player {
   ): void {
     if (this.isInVehicle) {
       this.mesh.visible = false;
+      return;
+    }
+
+    if (this.isDead) {
+      this.mesh.visible = true;
+      this.headMesh.visible = true;
+      this.torsoMesh.visible = true;
+      this.leftArm.visible = true;
+      this.leftLeg.visible = true;
+      this.rightLeg.visible = true;
+      this.rightArm.visible = true;
+
+      this.velocity.x = 0;
+      this.velocity.z = 0;
+      if (!this.isGrounded) {
+        this.velocity.y -= this.gravity * deltaTime;
+      }
+      this.applyMovementWithCollision(deltaTime, worldColliders);
+      this.mesh.position.copy(this.position);
+      this.mesh.position.y = Math.max(0.15, this.position.y);
+      this.mesh.rotation.x = -Math.PI / 2;
+      this.mesh.rotation.y = this.heading;
+      this.mesh.rotation.z = 0.25;
+      this.leftArm.rotation.set(-0.2, 0, 0.4);
+      this.rightArm.rotation.set(0.1, 0, -0.4);
+      this.leftLeg.rotation.set(0.1, 0, 0.1);
+      this.rightLeg.rotation.set(-0.2, 0, -0.1);
       return;
     }
 
@@ -615,10 +643,31 @@ export class Player {
   }
 
   public takeDamage(amount: number): void {
+    if (this.isDead) return;
     this.health = Math.max(0, this.health - amount);
     this.eventBus.emit('player:damage', { health: this.health, amount });
     if (this.health <= 0) {
+      this.isDead = true;
       this.eventBus.emit('player:death');
     }
+  }
+
+  public respawn(pos?: THREE.Vector3, heading: number = 0): void {
+    this.health = this.maxHealth;
+    this.stamina = this.maxStamina;
+    this.isDead = false;
+    this.velocity.set(0, 0, 0);
+    this.isGrounded = true;
+    this.heading = heading;
+    this.mesh.rotation.set(0, heading, 0);
+    this.leftArm.rotation.set(0, 0, 0);
+    this.rightArm.rotation.set(0, 0, 0);
+    this.leftLeg.rotation.set(0, 0, 0);
+    this.rightLeg.rotation.set(0, 0, 0);
+    if (pos) {
+      this.position.copy(pos);
+      this.mesh.position.copy(pos);
+    }
+    this.eventBus.emit('player:respawn', { health: this.health });
   }
 }

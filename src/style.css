@@ -747,6 +747,129 @@ html, body {
   margin-bottom: 24px;
 }
 
+/* WASTED / Death Screen */
+.wasted-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: wastedFadeIn 0.5s ease-out forwards;
+}
+
+.wasted-vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(11, 13, 15, 0.45) 25%, rgba(153, 27, 27, 0.5) 75%, rgba(69, 10, 10, 0.9) 100%);
+  pointer-events: none;
+}
+
+.wasted-card {
+  position: relative;
+  z-index: 2;
+  background-color: #0b0d0f;
+  border: 2px solid #991b1b;
+  border-top: 6px solid #ef4444;
+  padding: 40px 64px;
+  text-align: center;
+  min-width: 440px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.98), 0 0 50px rgba(185, 28, 28, 0.35);
+  animation: wastedCardPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.wasted-title {
+  font-family: var(--font-display);
+  font-size: 58px;
+  font-weight: 900;
+  letter-spacing: 10px;
+  color: #ef4444;
+  text-transform: uppercase;
+  text-shadow: 0 0 24px rgba(239, 68, 68, 0.7);
+  margin-bottom: 4px;
+}
+
+.wasted-sub {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #9ca3af;
+  text-transform: uppercase;
+}
+
+.wasted-divider {
+  width: 100%;
+  height: 1px;
+  background-color: #27272a;
+  margin: 20px 0;
+}
+
+.wasted-fee {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fca5a5;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+
+.wasted-clinic {
+  font-size: 12px;
+  color: #71717a;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.wasted-progress-track {
+  width: 100%;
+  height: 6px;
+  background-color: #18181b;
+  margin: 24px 0 10px;
+  border: 1px solid #27272a;
+  overflow: hidden;
+}
+
+.wasted-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+  transition: width 3s linear;
+}
+
+.wasted-respawn-hint {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: #ef4444;
+  text-transform: uppercase;
+  animation: wastedPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes wastedFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wastedCardPop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes wastedPulse {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
 /* Controls Modal */
 .controls-overlay {
   position: absolute;

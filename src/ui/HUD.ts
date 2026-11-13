@@ -62,6 +62,12 @@ export class HUD {
   private controlsHelpEl: HTMLElement;
   private closeControlsBtn: HTMLElement;
 
+  // Wasted Screen
+  private wastedScreenEl: HTMLElement;
+  private wastedFeeEl: HTMLElement;
+  private wastedProgressBarEl: HTMLElement;
+  private wastedTimeout: any = null;
+
   // Minimap Canvas
   private minimapCanvas: HTMLCanvasElement;
   private minimapCtx: CanvasRenderingContext2D;
@@ -130,6 +136,10 @@ export class HUD {
 
     this.controlsHelpEl = document.getElementById('controls-help')!;
     this.closeControlsBtn = document.getElementById('close-controls-btn')!;
+
+    this.wastedScreenEl = document.getElementById('wasted-screen')!;
+    this.wastedFeeEl = document.getElementById('wasted-fee-amount')!;
+    this.wastedProgressBarEl = document.getElementById('wasted-progress-bar')!;
 
     this.minimapCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement;
     this.minimapCtx = this.minimapCanvas.getContext('2d')!;
@@ -733,6 +743,42 @@ export class HUD {
 
   public toggleControls(): void {
     this.controlsHelpEl.classList.toggle('hidden');
+  }
+
+  // Wasted Screen
+  public showWasted(medicalFee: number, onRespawn: () => void): void {
+    if (!this.wastedScreenEl) return;
+    if (this.wastedFeeEl) {
+      this.wastedFeeEl.innerText = `-$${medicalFee}`;
+    }
+    if (this.wastedProgressBarEl) {
+      this.wastedProgressBarEl.style.width = '0%';
+    }
+    this.wastedScreenEl.classList.remove('hidden');
+
+    // Trigger progress animation
+    requestAnimationFrame(() => {
+      if (this.wastedProgressBarEl) {
+        this.wastedProgressBarEl.style.width = '100%';
+      }
+    });
+
+    if (this.wastedTimeout) {
+      clearTimeout(this.wastedTimeout);
+    }
+
+    this.wastedTimeout = setTimeout(() => {
+      this.hideWasted();
+      onRespawn();
+    }, 3200);
+  }
+
+  public hideWasted(): void {
+    if (!this.wastedScreenEl) return;
+    this.wastedScreenEl.classList.add('hidden');
+    if (this.wastedProgressBarEl) {
+      this.wastedProgressBarEl.style.width = '0%';
+    }
   }
 }
 

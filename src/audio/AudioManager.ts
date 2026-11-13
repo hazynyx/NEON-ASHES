@@ -444,4 +444,66 @@ export class AudioManager {
     osc.start(now);
     osc.stop(now + 0.04);
   }
+
+  // --- GTA-Style WASTED Death SFX ---
+  public playWastedSound(): void {
+    if (!this.ensureContext() || this.isMuted) return;
+    const ctx = this.ctx!;
+    const now = ctx.currentTime;
+
+    // 1. Deep Sub-Bass Impact Boom
+    const subOsc = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(85, now);
+    subOsc.frequency.exponentialRampToValueAtTime(24, now + 1.2);
+
+    subGain.gain.setValueAtTime(0.8, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.masterGain!);
+    subOsc.start(now);
+    subOsc.stop(now + 1.6);
+
+    // 2. Slow Low-Pass Dull Impact Thud (Noise burst)
+    const bufferSize = Math.floor(ctx.sampleRate * 0.4);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.08));
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(320, now);
+    filter.frequency.exponentialRampToValueAtTime(60, now + 0.35);
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.5, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.masterGain!);
+    noise.start(now);
+
+    // 3. Eerie High-Pitched Flatline Tinnitus Ring
+    const ringOsc = ctx.createOscillator();
+    const ringGain = ctx.createGain();
+    ringOsc.type = 'sine';
+    ringOsc.frequency.setValueAtTime(920, now + 0.1);
+    ringOsc.frequency.exponentialRampToValueAtTime(460, now + 2.5);
+
+    ringGain.gain.setValueAtTime(0.001, now);
+    ringGain.gain.linearRampToValueAtTime(0.18, now + 0.15);
+    ringGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+
+    ringOsc.connect(ringGain);
+    ringGain.connect(this.masterGain!);
+    ringOsc.start(now + 0.1);
+    ringOsc.stop(now + 2.9);
+  }
 }

@@ -117,6 +117,34 @@ export class Game {
       }
     });
 
+    // Handle Player Death (WASTED)
+    this.eventBus.on('player:death', () => {
+      // 1. Play WASTED flatline/impact audio
+      this.audio.playWastedSound();
+
+      // 2. If inside vehicle, exit vehicle
+      if (this.player.isInVehicle && this.vehicleMgr.activeVehicle) {
+        this.vehicleMgr.exitVehicle(this.player);
+      }
+
+      // 3. Deduct medical fee ($100 or current cash)
+      const medicalFee = Math.min(this.player.cash, 100);
+      this.player.cash = Math.max(0, this.player.cash - medicalFee);
+
+      // 4. Release mouse pointer lock during wasted overlay
+      this.input.exitPointerLock();
+
+      // 5. Show WASTED overlay with medical invoice and respawn countdown
+      this.hud.showWasted(medicalFee, () => {
+        // Respawn outside Lena's Apartment Safehouse / Central Metro Clinic
+        const respawnPos = new THREE.Vector3(30, 0, -22);
+        this.player.respawn(respawnPos, 0);
+        this.camera.snap(this.player.position, 0, 0.1);
+        this.input.requestPointerLock();
+        this.hud.showNarration('METRO CLINIC', `Patient Kaleb discharged. Medical expenses: -$${medicalFee}`);
+      });
+    });
+
     // Handle Mission Complete Event
     this.eventBus.on('mission:complete', ({ mission }) => {
       this.state.setState(GameMode.MISSION_RESULT);
