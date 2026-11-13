@@ -821,6 +821,19 @@ export class DebugMenu {
   public open(): void {
     if (this.isMenuOpen) return;
     this.isMenuOpen = true;
+
+    // Mutually exclusive: close pause menu if open
+    if (this.game.pauseMenu.isOpen()) {
+      this.game.pauseMenu.close();
+    }
+
+    // Hide start screen if active
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen && !startScreen.classList.contains('hidden')) {
+      startScreen.classList.add('hidden');
+      this.game.state.setState(GameMode.FREE_ROAM);
+    }
+
     this.menuEl.classList.remove('hidden');
     this.game.input.exitPointerLock();
 
@@ -838,7 +851,10 @@ export class DebugMenu {
     if (!this.isMenuOpen) return;
     this.isMenuOpen = false;
     this.menuEl.classList.add('hidden');
-    this.game.input.requestPointerLock();
+
+    if (!this.game.pauseMenu.isOpen() && !this.game.hud.isEvidenceOpen && !this.game.hud.isWastedOpen && !this.game.player.isDead) {
+      this.game.input.requestPointerLock();
+    }
   }
 
   public toggle(): void {
@@ -876,8 +892,27 @@ export class DebugMenu {
   }
 
   public warpToMission(missionKey: string, stageIndex: number = 0): void {
-    const def = this.missions[missionKey];
+    const matchedKey =
+      Object.keys(this.missions).find(
+        (k) =>
+          k.toLowerCase() === missionKey.toLowerCase() ||
+          missionKey.toLowerCase().includes(k.toLowerCase()) ||
+          k.toLowerCase().includes(missionKey.toLowerCase())
+      ) || missionKey;
+    const def = this.missions[matchedKey];
     if (!def) return;
+
+    // Hide start screen if active
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen && !startScreen.classList.contains('hidden')) {
+      startScreen.classList.add('hidden');
+    }
+    this.game.state.setState(GameMode.MISSION_ACTIVE);
+
+    // Close pause menu if open
+    if (this.game.pauseMenu.isOpen()) {
+      this.game.pauseMenu.close();
+    }
 
     // 1. Exit vehicle if player is driving
     if (this.game.player.isInVehicle && this.game.vehicleMgr.activeVehicle) {

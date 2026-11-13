@@ -210,6 +210,11 @@ export class PauseMenu {
   }
 
   public open(tab: string = 'map'): void {
+    const debugMenuEl = document.getElementById('debug-menu');
+    if (debugMenuEl && !debugMenuEl.classList.contains('hidden')) {
+      debugMenuEl.classList.add('hidden');
+    }
+
     this.isOpenState = true;
     this.overlayEl.classList.remove('hidden');
     this.switchTab(tab);

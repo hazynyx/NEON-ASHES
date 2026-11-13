@@ -10,6 +10,7 @@ export class MissionManager {
   public currentObjectiveIndex: number = 0;
   public isMissionActive: boolean = false;
   public completedMissions: Set<string> = new Set();
+  public lastFailedMission: { id: string; stageIndex: number } | null = null;
 
   private eventBus: EventBus;
   private audio: AudioManager;
@@ -69,6 +70,16 @@ export class MissionManager {
 
     this.audio.playMissionPassed();
     this.eventBus.emit('mission:complete', { mission });
+  }
+
+  public failMission(reason: string = 'Kaleb Voss was killed'): void {
+    if (!this.currentMission || !this.isMissionActive) return;
+    const mission = this.currentMission;
+    this.isMissionActive = false;
+    this.lastFailedMission = { id: mission.id, stageIndex: this.currentObjectiveIndex };
+
+    this.audio.playMissionFailed();
+    this.eventBus.emit('mission:failed', { mission, reason });
   }
 
   public update(player: Player): void {

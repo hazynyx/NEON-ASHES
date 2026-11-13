@@ -48,6 +48,7 @@ export class Game {
   public eventBus: EventBus;
   public enemyMgr: EnemyManager;
   public destinationMarker: DestinationMarker;
+  public canvas: HTMLCanvasElement;
 
   // Interior apartment state for M01
   public isInApartmentInterior: boolean = false;
@@ -72,6 +73,7 @@ export class Game {
   public m07DebtAmount: number = 2000;
 
   constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x131a26);
     this.scene.fog = new THREE.FogExp2(0x131a26, 0.0022); // Atmospheric visibility up to 450m
@@ -131,17 +133,51 @@ export class Game {
   }
 
   private setupEventListeners(): void {
+    // Click on canvas to lock mouse whenever no menu/modal is open
+    this.canvas.addEventListener('click', () => {
+      if (
+        this.pauseMenu.isOpen() ||
+        this.debugMenu.isOpen() ||
+        this.hud.isEvidenceOpen ||
+        this.hud.isWastedOpen ||
+        this.hud.isMissionResultOpen ||
+        this.player.isDead
+      ) {
+        return;
+      }
+      const startScreen = document.getElementById('start-screen');
+      if (startScreen && !startScreen.classList.contains('hidden')) {
+        return;
+      }
+      if (!this.input.isPointerLocked) {
+        this.input.requestPointerLock();
+      }
+    });
+
     // Pointer lock toggle: unlock triggers pause menu
     this.input.setPointerLockCallback((isLocked) => {
-      if (!isLocked && !this.player.isDead && (this.state.getState() === GameMode.FREE_ROAM || this.state.getState() === GameMode.MISSION_ACTIVE || this.state.getState() === GameMode.IN_VEHICLE)) {
-        if (!this.dialogueMgr.isActive && !this.pauseMenu.isOpen() && !this.hud.isEvidenceOpen && !this.debugMenu.isOpen()) {
+      if (
+        !isLocked &&
+        !this.player.isDead &&
+        (this.state.getState() === GameMode.FREE_ROAM ||
+          this.state.getState() === GameMode.MISSION_ACTIVE ||
+          this.state.getState() === GameMode.IN_VEHICLE)
+      ) {
+        if (
+          !this.dialogueMgr.isActive &&
+          !this.pauseMenu.isOpen() &&
+          !this.hud.isEvidenceOpen &&
+          !this.hud.isWastedOpen &&
+          !this.hud.isMissionResultOpen &&
+          !this.debugMenu.isOpen()
+        ) {
           this.state.setState(GameMode.PAUSED);
           this.pauseMenu.open('map');
         }
       }
     });
 
-    // Handle Player Death (WASTED)
+    // Handle Player Death (WASTED & Mission Failure)
     this.eventBus.on('player:death', () => {
       // 1. Play WASTED flatline/impact audio
       this.audio.playWastedSound();
@@ -151,22 +187,58 @@ export class Game {
         this.vehicleMgr.exitVehicle(this.player);
       }
 
-      // 3. Close pause menu if open
+      // 3. Close pause menu & debug menu if open
       if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
+      }
+      if (this.debugMenu.isOpen()) {
+        this.debugMenu.close();
       }
 
       // 4. Deduct medical fee ($100 or current cash)
       const medicalFee = Math.min(this.player.cash, 100);
       this.player.cash = Math.max(0, this.player.cash - medicalFee);
 
-      // 5. Show WASTED overlay with medical invoice and respawn countdown
+      // 5. If mission was active, fail it immediately and clear hostile combatants
+      const activeMission = this.missionMgr.currentMission;
+      const wasMissionActive = this.missionMgr.isMissionActive;
+      if (wasMissionActive && activeMission) {
+        this.missionMgr.failMission('Kaleb Voss was killed in action');
+        this.enemyMgr.clear();
+      }
+
+      // 6. Show WASTED overlay with medical invoice and respawn countdown
       this.hud.showWasted(medicalFee, () => {
         // Respawn outside Lena's Apartment Safehouse / Central Metro Clinic
         const respawnPos = new THREE.Vector3(30, 0, -22);
         this.player.respawn(respawnPos, 0);
         this.camera.snap(this.player.position, 0, 0.1);
-        this.hud.showNarration('METRO CLINIC', `Patient Kaleb discharged. Medical expenses: -$${medicalFee}`);
+
+        if (wasMissionActive && activeMission) {
+          this.state.setState(GameMode.MISSION_RESULT);
+          this.hud.showMissionFailed(
+            activeMission.title,
+            'KALEB WAS CRITICALLY INJURED • MISSION TERMINATED',
+            () => {
+              // Retry mission from start
+              this.debugMenu.warpToMission(activeMission.id, 0);
+              this.hud.showNotification(`Restarting ${activeMission.title}...`);
+            },
+            () => {
+              // Abandon mission, return to free roam
+              this.state.setState(GameMode.FREE_ROAM);
+              this.hud.showNarration(
+                'METRO CLINIC',
+                `Patient Kaleb discharged. Medical expenses: -$${medicalFee}`
+              );
+            }
+          );
+        } else {
+          this.hud.showNarration(
+            'METRO CLINIC',
+            `Patient Kaleb discharged. Medical expenses: -$${medicalFee}`
+          );
+        }
       });
     });
 
@@ -385,12 +457,18 @@ export class Game {
   public update(deltaTime: number): void {
     // 0. Check Developer Debug Menu hotkeys (F2 / Backquote)
     if (this.input.isKeyPressed('F2') || this.input.isKeyPressed('Backquote')) {
+      this.input.consumeKey('F2');
+      this.input.consumeKey('Backquote');
+      if (this.pauseMenu.isOpen()) {
+        this.pauseMenu.close();
+      }
       this.debugMenu.toggle();
       return;
     }
 
     if (this.debugMenu.isOpen()) {
       if (this.input.isKeyPressed('Escape')) {
+        this.input.consumeKey('Escape');
         this.debugMenu.close();
         return;
       }
@@ -404,6 +482,8 @@ export class Game {
       if (this.hud.isEvidenceOpen) {
         this.hud.hideEvidence();
         this.input.requestPointerLock();
+      } else if (this.hud.isMissionResultOpen) {
+        // Mission Passed / Failed banner handles its own resolution
       } else if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
       } else if (this.state.getState() !== GameMode.MAIN_MENU) {
@@ -414,7 +494,7 @@ export class Game {
     } else if (this.input.isKeyPressed('KeyM')) {
       if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
-      } else if (this.state.getState() !== GameMode.MAIN_MENU) {
+      } else if (!this.hud.isMissionResultOpen && this.state.getState() !== GameMode.MAIN_MENU) {
         this.state.setState(GameMode.PAUSED);
         this.input.exitPointerLock();
         this.pauseMenu.open('map');
@@ -422,7 +502,7 @@ export class Game {
     } else if (this.input.isKeyPressed('F1')) {
       if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
-      } else if (this.state.getState() !== GameMode.MAIN_MENU) {
+      } else if (!this.hud.isMissionResultOpen && this.state.getState() !== GameMode.MAIN_MENU) {
         this.state.setState(GameMode.PAUSED);
         this.input.exitPointerLock();
         this.pauseMenu.open('controls');
@@ -1224,9 +1304,9 @@ export class Game {
 
     // Objective 2: resolve_debt_choice
     if (currentObj.id === 'resolve_debt_choice') {
-      const isChoiceA = this.input.isKeyPressed('Digit1') || this.input.isKeyPressed('Key1') || this.input.isKeyPressed('Numpad1');
-      const isChoiceB = this.input.isKeyPressed('Digit2') || this.input.isKeyPressed('Key2') || this.input.isKeyPressed('Numpad2');
-      const isChoiceC = this.input.isKeyPressed('Digit3') || this.input.isKeyPressed('Key3') || this.input.isKeyPressed('Numpad3');
+      const isChoiceA = this.input.isKeyPressed('Digit1') || this.input.isKeyDown('Digit1') || this.input.isKeyPressed('Key1') || this.input.isKeyDown('Key1') || this.input.isKeyPressed('Numpad1') || this.input.isKeyDown('Numpad1');
+      const isChoiceB = this.input.isKeyPressed('Digit2') || this.input.isKeyDown('Digit2') || this.input.isKeyPressed('Key2') || this.input.isKeyDown('Key2') || this.input.isKeyPressed('Numpad2') || this.input.isKeyDown('Numpad2');
+      const isChoiceC = this.input.isKeyPressed('Digit3') || this.input.isKeyDown('Digit3') || this.input.isKeyPressed('Key3') || this.input.isKeyDown('Key3') || this.input.isKeyPressed('Numpad3') || this.input.isKeyDown('Numpad3');
 
       if (isChoiceA) {
         this.input.consumeKey('Digit1');

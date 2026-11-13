@@ -47,8 +47,8 @@ export class InputManager {
     }
     this.keys.set(code, true);
 
-    // Prevent default scrolling for game keys
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'F1'].includes(code)) {
+    // Prevent default scrolling and browser actions for game keys
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'F1', 'F2', 'Backquote'].includes(code)) {
       e.preventDefault();
     }
   }
@@ -92,6 +92,7 @@ export class InputManager {
 
   public consumeKey(code: string): void {
     this.keysJustPressed.delete(code);
+    this.keys.set(code, false);
   }
 
   public isMouseButtonDown(btn: number): boolean {

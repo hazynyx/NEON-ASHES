@@ -747,6 +747,29 @@ html, body {
   margin-bottom: 24px;
 }
 
+.mission-result.failed {
+  border-top-color: #ef4444;
+  box-shadow: 0 16px 48px rgba(239, 68, 68, 0.4);
+}
+
+.mission-result.failed .banner-title {
+  color: #ef4444;
+  text-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
+}
+
+.mission-result.failed .banner-reward {
+  color: #f87171;
+  border-color: #7f1d1d;
+  background-color: rgba(69, 10, 10, 0.5);
+}
+
+.result-btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
 /* WASTED / Death Screen */
 .wasted-overlay {
   position: absolute;

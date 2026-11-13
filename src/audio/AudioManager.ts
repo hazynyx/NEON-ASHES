@@ -357,6 +357,37 @@ export class AudioManager {
     });
   }
 
+  // --- Mission Failed / Dissonant Drone ---
+  public playMissionFailed(): void {
+    if (!this.ensureContext() || this.isMuted) return;
+    const ctx = this.ctx!;
+    const now = ctx.currentTime;
+
+    // Heavy descending minor sequence (D3 -> C#3 -> C3 -> A2)
+    const freqs = [146.83, 138.59, 130.81, 110.00];
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+
+      // Filter high frequencies for dark, muffled cinematic weight
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(450, now + idx * 0.16);
+
+      gain.gain.setValueAtTime(0.38, now + idx * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.75);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain!);
+
+      osc.start(now + idx * 0.16);
+      osc.stop(now + idx * 0.16 + 0.8);
+    });
+  }
+
   // --- UI Click / Interaction ---
   public playUIClick(): void {
     if (!this.ensureContext() || this.isMuted) return;

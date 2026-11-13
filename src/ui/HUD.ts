@@ -57,6 +57,8 @@ export class HUD {
   // Mission Passed Banner
   private missionResultBannerEl: HTMLElement;
   private resultContinueBtn: HTMLElement;
+  private resultRetryBtn: HTMLElement | null = null;
+  public isMissionResultOpen: boolean = false;
 
   // Controls Modal
   private controlsHelpEl: HTMLElement;
@@ -133,6 +135,7 @@ export class HUD {
 
     this.missionResultBannerEl = document.getElementById('mission-result-banner')!;
     this.resultContinueBtn = document.getElementById('result-continue-btn')!;
+    this.resultRetryBtn = document.getElementById('result-retry-btn');
 
     this.controlsHelpEl = document.getElementById('controls-help')!;
     this.closeControlsBtn = document.getElementById('close-controls-btn')!;
@@ -972,19 +975,76 @@ export class HUD {
 
   // Mission Passed Banner
   public showMissionPassed(missionTitle: string, rewardText: string, onContinue: () => void): void {
+    const resultTitle = document.getElementById('result-title')!;
     const resultSub = document.getElementById('result-sub')!;
     const resultReward = document.getElementById('result-reward')!;
+
+    this.missionResultBannerEl.classList.remove('failed');
+    resultTitle.innerText = 'MISSION PASSED';
     resultSub.innerText = missionTitle;
     resultReward.innerText = rewardText;
 
+    if (this.resultRetryBtn) {
+      this.resultRetryBtn.classList.add('hidden');
+    }
+    this.resultContinueBtn.innerText = 'CONTINUE TO FREE ROAM';
+
+    this.isMissionResultOpen = true;
     this.missionResultBannerEl.classList.remove('hidden');
 
     const handler = () => {
+      this.isMissionResultOpen = false;
       this.missionResultBannerEl.classList.add('hidden');
       this.resultContinueBtn.removeEventListener('click', handler);
       onContinue();
     };
     this.resultContinueBtn.addEventListener('click', handler);
+  }
+
+  // Mission Failed Banner
+  public showMissionFailed(
+    missionTitle: string,
+    reasonText: string,
+    onRetry: () => void,
+    onAbandon: () => void
+  ): void {
+    const resultTitle = document.getElementById('result-title')!;
+    const resultSub = document.getElementById('result-sub')!;
+    const resultReward = document.getElementById('result-reward')!;
+
+    this.missionResultBannerEl.classList.add('failed');
+    resultTitle.innerText = 'MISSION FAILED';
+    resultSub.innerText = missionTitle;
+    resultReward.innerText = reasonText;
+
+    this.isMissionResultOpen = true;
+    this.missionResultBannerEl.classList.remove('hidden');
+
+    if (this.resultRetryBtn) {
+      this.resultRetryBtn.classList.remove('hidden');
+      this.resultRetryBtn.innerText = 'RETRY MISSION';
+
+      const retryHandler = () => {
+        this.isMissionResultOpen = false;
+        this.missionResultBannerEl.classList.add('hidden');
+        this.resultRetryBtn?.removeEventListener('click', retryHandler);
+        this.resultContinueBtn.removeEventListener('click', abandonHandler);
+        onRetry();
+      };
+      this.resultRetryBtn.addEventListener('click', retryHandler);
+    }
+
+    this.resultContinueBtn.innerText = 'ABANDON MISSION (FREE ROAM)';
+    const abandonHandler = () => {
+      this.isMissionResultOpen = false;
+      this.missionResultBannerEl.classList.add('hidden');
+      if (this.resultRetryBtn) {
+        this.resultRetryBtn.classList.add('hidden');
+      }
+      this.resultContinueBtn.removeEventListener('click', abandonHandler);
+      onAbandon();
+    };
+    this.resultContinueBtn.addEventListener('click', abandonHandler);
   }
 
   // Controls Modal
@@ -1036,6 +1096,10 @@ export class HUD {
         star.classList.remove('active');
       }
     });
+  }
+
+  public get isWastedOpen(): boolean {
+    return !!this.wastedScreenEl && !this.wastedScreenEl.classList.contains('hidden');
   }
 
   public hideWasted(): void {
