@@ -653,11 +653,13 @@ export class Game {
       } else if (currentObj.id === 'debrief_jonah') {
         const debriefPos = currentObj.targetPosition || new THREE.Vector3(-56, 0, 67);
         const workshopInsidePos = new THREE.Vector3(-58, 0, 52);
+        const forecourtPos = new THREE.Vector3(-60, 0, 65);
         const dist = Math.min(
           this.player.position.distanceTo(debriefPos),
-          this.player.position.distanceTo(workshopInsidePos)
+          this.player.position.distanceTo(workshopInsidePos),
+          this.player.position.distanceTo(forecourtPos)
         );
-        if (dist < 6.0) {
+        if (dist < 10.0) {
           return { text: 'Speak with Jonah', key: 'E' };
         }
       }
@@ -1333,6 +1335,7 @@ export class Game {
       if (dist < 4.5 && this.input.isKeyPressed('KeyE')) {
         this.input.consumeKey('KeyE');
         this.audio.playUIClick();
+        this.drakeAlliance = true;
         this.hud.showNotification("Contraband Package Collected!");
         this.narrationMgr.queueNarrations([
           {
@@ -1347,9 +1350,9 @@ export class Game {
 
     // Objective 5: return_to_garage (Branch C)
     if (currentObj.id === 'return_to_garage') {
+      this.drakeAlliance = true;
       const dist = this.player.position.distanceTo(this.world.adrianGaragePos);
       if (dist < 15.0) {
-        this.drakeAlliance = true;
         this.world.openGarageShutter();
         this.missionMgr.advanceObjective(); // Advance to debrief_jonah (Objective 6)
       }
@@ -1357,14 +1360,19 @@ export class Game {
 
     // Objective 6: debrief_jonah
     if (currentObj.id === 'debrief_jonah') {
+      if (this.m07Choice === 'C') {
+        this.drakeAlliance = true;
+      }
       const debriefPos = currentObj.targetPosition || new THREE.Vector3(-56, 0, 67);
       const workshopInsidePos = new THREE.Vector3(-58, 0, 52);
+      const forecourtPos = new THREE.Vector3(-60, 0, 65);
       const dist = Math.min(
         this.player.position.distanceTo(debriefPos),
-        this.player.position.distanceTo(workshopInsidePos)
+        this.player.position.distanceTo(workshopInsidePos),
+        this.player.position.distanceTo(forecourtPos)
       );
 
-      if (dist < 6.0 && this.input.isKeyPressed('KeyE')) {
+      if (dist < 10.0 && this.input.isKeyPressed('KeyE')) {
         this.input.consumeKey('KeyE');
         this.audio.playUIClick();
         this.world.openGarageShutter();
