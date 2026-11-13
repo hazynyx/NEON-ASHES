@@ -11,11 +11,13 @@ export class ThirdPersonCamera {
   private normalDistance: number = 4.2;
   private aimDistance: number = 2.2;
   private vehicleDistance: number = 6.8;
+  private interiorDistance: number = 2.0;
   private currentDistance: number = 4.2;
 
   // Offsets
   private playerOffset: THREE.Vector3 = new THREE.Vector3(0, 1.6, 0); // Eye height
   private aimOffset: THREE.Vector3 = new THREE.Vector3(0.55, 1.5, 0); // Shoulder offset
+  private interiorOffset: THREE.Vector3 = new THREE.Vector3(0.35, 1.45, 0); // Indoor over-shoulder
 
   // Smoothing
   private targetPosition: THREE.Vector3 = new THREE.Vector3();
@@ -25,6 +27,7 @@ export class ThirdPersonCamera {
   // Mode flags
   public isAiming: boolean = false;
   public isVehicleMode: boolean = false;
+  public isInteriorMode: boolean = false;
 
   // Settings
   public sensitivityMultiplier: number = 1.0;
@@ -46,9 +49,9 @@ export class ThirdPersonCamera {
     const ySign = this.invertY ? -1 : 1;
     this.pitch += deltaY * sens * ySign;
 
-    // Clamp pitch
-    const maxPitch = Math.PI / 2.3; // ~78 deg
-    const minPitch = -Math.PI / 3.0; // ~-60 deg
+    // Clamp pitch (tighter clamp inside interiors so ceiling/floor aren't clipped)
+    const maxPitch = this.isInteriorMode ? Math.PI / 3.4 : Math.PI / 2.3;
+    const minPitch = this.isInteriorMode ? -Math.PI / 4.5 : -Math.PI / 3.0;
     this.pitch = Math.max(minPitch, Math.min(maxPitch, this.pitch));
   }
 
@@ -65,6 +68,9 @@ export class ThirdPersonCamera {
     if (this.isAiming) {
       desiredDist = this.aimDistance;
       offset = this.aimOffset;
+    } else if (this.isInteriorMode) {
+      desiredDist = this.interiorDistance;
+      offset = this.interiorOffset;
     } else if (this.isVehicleMode) {
       desiredDist = this.vehicleDistance;
       // In vehicle mode, gently align camera yaw with vehicle heading if not moving mouse

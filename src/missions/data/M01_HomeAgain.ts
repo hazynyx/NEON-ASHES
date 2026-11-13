@@ -39,15 +39,23 @@ export function createMission01Data(lenaApartmentPos: THREE.Vector3): MissionDat
       {
         id: 'search_room',
         type: ObjectiveType.INVESTIGATE,
-        description: "Search the ransacked apartment for clues",
-        targetPosition: new THREE.Vector3(lenaApartmentPos.x, 0, lenaApartmentPos.z + 14),
-        targetDistance: 2.5,
+        description: "Search the ransacked apartment and loose floorboard",
+        targetPosition: new THREE.Vector3(297.2, 0, -302.2),
+        targetDistance: 3.5,
         isCompleted: false
       },
       {
         id: 'inspect_photo',
         type: ObjectiveType.COLLECT,
-        description: "Examine the hidden photograph",
+        description: "Examine the hidden harbor photograph",
+        isCompleted: false
+      },
+      {
+        id: 'exit_apartment',
+        type: ObjectiveType.GO_TO,
+        description: "Leave Unit 102 and head to Eastline Avenue",
+        targetPosition: new THREE.Vector3(300, 0, -296.8),
+        targetDistance: 2.5,
         isCompleted: false
       }
     ]

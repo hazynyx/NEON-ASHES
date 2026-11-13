@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ApartmentInterior } from './ApartmentInterior.ts';
 
 export interface WorldPOI {
   id: string;
@@ -11,6 +12,7 @@ export class World {
   public scene: THREE.Scene;
   public colliders: THREE.Box3[] = [];
   public pois: WorldPOI[] = [];
+  public apartmentInterior: ApartmentInterior;
   
   // Roads and buildings data for minimap
   public roads: Array<{ x1: number; z1: number; x2: number; z2: number; width: number }> = [];
@@ -39,6 +41,8 @@ export class World {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    this.apartmentInterior = new ApartmentInterior(this.scene);
+    this.colliders.push(...this.apartmentInterior.colliders);
     this.buildCity();
   }
 
@@ -274,6 +278,33 @@ export class World {
     const porchLight = new THREE.PointLight(0xffa726, 1.5, 12);
     porchLight.position.set(pos.x, 3.4, pos.z + depth / 2 + 2);
     this.scene.add(porchLight);
+
+    // Entrance Doorway on Front Facade (Unit 102 Main Entry)
+    const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.4, 0.4), doorFrameMat);
+    doorFrame.position.set(pos.x, 1.7, pos.z + depth / 2 + 0.1);
+    this.scene.add(doorFrame);
+
+    const doorPanelMat = new THREE.MeshStandardMaterial({
+      color: 0x3b1d11, // Dark mahogany
+      roughness: 0.4,
+      metalness: 0.2
+    });
+    const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.0, 0.15), doorPanelMat);
+    doorPanel.position.set(pos.x, 1.5, pos.z + depth / 2 + 0.2);
+    this.scene.add(doorPanel);
+
+    // Brass Kickplate & Handles
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9, roughness: 0.2 });
+    const kickplate = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.35, 0.05), brassMat);
+    kickplate.position.set(pos.x, 0.2, pos.z + depth / 2 + 0.28);
+    this.scene.add(kickplate);
+
+    [-0.3, 0.3].forEach(hx => {
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 8), brassMat);
+      handle.position.set(pos.x + hx, 1.4, pos.z + depth / 2 + 0.3);
+      this.scene.add(handle);
+    });
 
     // Register POI
     this.pois.push({
@@ -790,6 +821,9 @@ export class World {
   public update(deltaTime: number): void {
     if (this.isWarehouseShutterOpen && this.warehouseShutterMesh && this.warehouseShutterMesh.position.y < 9.5) {
       this.warehouseShutterMesh.position.y += deltaTime * 3.5;
+    }
+    if (this.apartmentInterior) {
+      this.apartmentInterior.update(deltaTime);
     }
   }
 

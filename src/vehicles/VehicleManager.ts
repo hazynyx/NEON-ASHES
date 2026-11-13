@@ -283,18 +283,19 @@ export class VehicleManager {
     this.eventBus.emit('player:enterVehicle', { vehicle });
   }
 
-  public exitVehicle(player: Player, vehicle: Vehicle): void {
-    // Exit safely to the driver side
-    const exitPos = vehicle.getExitPosition();
+  public exitVehicle(player: Player, vehicle?: Vehicle): void {
+    const veh = vehicle || this.activeVehicle;
+    if (!veh) return;
+    const exitPos = veh.getExitPosition();
     player.position.copy(exitPos);
     player.position.y = 0;
     player.isInVehicle = false;
-    vehicle.isOccupied = false;
+    veh.isOccupied = false;
     this.activeVehicle = null;
 
     this.audio.stopEngine();
     this.audio.playDoorSlam();
 
-    this.eventBus.emit('player:exitVehicle', { vehicle });
+    this.eventBus.emit('player:exitVehicle', { vehicle: veh });
   }
 }

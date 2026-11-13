@@ -46,8 +46,9 @@ export class Game {
 
   // Interior apartment state for M01
   private isInApartmentInterior: boolean = false;
-  private apartmentDoorPos: THREE.Vector3 = new THREE.Vector3(30, 0, -29);
-  private apartmentDeskPos: THREE.Vector3 = new THREE.Vector3(30, 0, -38);
+  private apartmentDoorPos: THREE.Vector3 = new THREE.Vector3(30, 0, -28);
+  private apartmentDeskPos: THREE.Vector3 = new THREE.Vector3(297.2, 0, -302.2);
+  private apartmentExitDoorPos: THREE.Vector3 = new THREE.Vector3(300, 0, -296.8);
 
   // Garage safe state for M02
   private garageShutterPos: THREE.Vector3 = new THREE.Vector3(-60, 0, 64);
@@ -301,6 +302,7 @@ export class Game {
     // 6. Update Camera
     const isDriving = !!this.vehicleMgr.activeVehicle;
     this.camera.isVehicleMode = isDriving;
+    this.camera.isInteriorMode = this.isInApartmentInterior;
     const targetPos = isDriving ? this.vehicleMgr.activeVehicle!.position : this.player.position;
     const targetHeading = isDriving ? this.vehicleMgr.activeVehicle!.heading : this.player.heading;
 
@@ -345,20 +347,35 @@ export class Game {
       return { text: `Talk to ${this.npcMgr.nearbyNPC.data.name}`, key: 'F' };
     }
 
-    // Mission M01 specific interaction prompts
     const currentObj = this.missionMgr.getCurrentObjective();
-    if (currentObj) {
-      if (currentObj.id === 'enter_apartment') {
-        const dist = this.player.position.distanceTo(this.apartmentDoorPos);
-        if (dist < 4.0) {
-          return { text: "Enter Lena's Apartment", key: 'E' };
-        }
-      } else if (currentObj.id === 'search_room') {
-        const dist = this.player.position.distanceTo(this.apartmentDeskPos);
-        if (dist < 4.0) {
-          return { text: 'Search Desk & Bookcase', key: 'E' };
+
+    // Inside Lena's Apartment (Unit 102)
+    if (this.isInApartmentInterior) {
+      const distToDesk = this.player.position.distanceTo(this.apartmentDeskPos);
+      if (distToDesk < 3.8 && currentObj && currentObj.id === 'search_room') {
+        return { text: 'Search Desk & Loose Floorboard', key: 'E' };
+      }
+
+      const distToExit = this.player.position.distanceTo(this.apartmentExitDoorPos);
+      if (distToExit < 3.0) {
+        return { text: 'Leave Unit 102', key: 'E' };
+      }
+    }
+
+    // Outside Apartment Door
+    if (!this.isInApartmentInterior) {
+      const distToDoor = this.player.position.distanceTo(this.apartmentDoorPos);
+      if (distToDoor < 4.0) {
+        if (currentObj && currentObj.id === 'enter_apartment') {
+          return { text: "Enter Lena's Apartment (Unit 102)", key: 'E' };
+        } else if (this.missionMgr.completedMissions.has('M01')) {
+          return { text: "Enter Safehouse (Unit 102)", key: 'E' };
         }
       }
+    }
+
+    // Mission M01 specific interaction prompts
+    if (currentObj) {
 
       // Mission M02 specific interaction prompts
       if (currentObj.id === 'enter_garage') {
@@ -449,27 +466,93 @@ export class Game {
     // Objective: enter_apartment
     if (currentObj.id === 'enter_apartment') {
       const dist = this.player.position.distanceTo(this.apartmentDoorPos);
-      if (dist < 3.5 && this.input.isKeyPressed('KeyE')) {
-        this.player.position.set(30, 0, -36);
-        this.isInApartmentInterior = true;
+      if (dist < 4.0 && this.input.isKeyPressed('KeyE')) {
+        if (this.player.isInVehicle) {
+          this.vehicleMgr.exitVehicle(this.player);
+        }
         this.audio.playDoorSlam();
-        this.missionMgr.advanceObjective();
+        this.player.position.copy(this.world.apartmentInterior.spawnPos);
+        this.player.heading = 0; // Face North into the room towards the desk
+        this.camera.yaw = 0; // Camera behind Kaleb looking into the apartment
+        this.camera.pitch = 0.12;
+        this.camera.isInteriorMode = true;
+        this.isInApartmentInterior = true;
+        this.missionMgr.advanceObjective(); // Advances to search_room
+
+        // Kaleb's interior monologue
+        setTimeout(() => {
+          this.narrationMgr.queueNarrations([
+            {
+              speaker: 'KALEB (INTERNAL)',
+              text: "Place is completely torn apart... Lena wouldn't leave her notes scattered like this unless she was forced out in a hurry.",
+              delayAfter: 600
+            },
+            {
+              speaker: 'KALEB (INTERNAL)',
+              text: "She always had a backup stash. Check behind the desk.",
+              delayAfter: 500
+            }
+          ]);
+        }, 500);
+      }
+    }
+
+    // Free-roam entry into Safehouse after M01
+    if (!this.isInApartmentInterior && this.missionMgr.completedMissions.has('M01')) {
+      const dist = this.player.position.distanceTo(this.apartmentDoorPos);
+      if (dist < 3.8 && this.input.isKeyPressed('KeyE')) {
+        if (this.player.isInVehicle) {
+          this.vehicleMgr.exitVehicle(this.player);
+        }
+        this.audio.playDoorSlam();
+        this.player.position.copy(this.world.apartmentInterior.spawnPos);
+        this.player.heading = 0;
+        this.camera.yaw = 0;
+        this.camera.pitch = 0.12;
+        this.camera.isInteriorMode = true;
+        this.isInApartmentInterior = true;
       }
     }
 
     // Objective: search_room
     if (currentObj.id === 'search_room') {
       const dist = this.player.position.distanceTo(this.apartmentDeskPos);
-      if (dist < 3.5 && this.input.isKeyPressed('KeyE')) {
+      if (dist < 3.8 && this.input.isKeyPressed('KeyE')) {
         this.audio.playUIClick();
-        this.missionMgr.advanceObjective();
+        this.world.apartmentInterior.setFloorboardBeaconVisible(false);
+        this.missionMgr.advanceObjective(); // Advances to inspect_photo
 
         // Show harbor evidence photograph modal
         this.input.exitPointerLock();
         this.hud.showEvidence(() => {
           this.input.requestPointerLock();
-          this.missionMgr.advanceObjective(); // Completes inspect_photo & finishes M01!
+          this.missionMgr.advanceObjective(); // Advances to exit_apartment!
+
+          this.narrationMgr.queueNarrations([
+            {
+              speaker: 'KALEB (INTERNAL)',
+              text: "Pier 19... And Adrian's old safehouse. I need to get out to Adrian's garage in Southside.",
+              delayAfter: 500
+            }
+          ]);
         });
+      }
+    }
+
+    // Objective: exit_apartment (or general exit when in interior)
+    if (this.isInApartmentInterior) {
+      const dist = this.player.position.distanceTo(this.apartmentExitDoorPos);
+      if (dist < 3.0 && this.input.isKeyPressed('KeyE')) {
+        this.audio.playDoorSlam();
+        this.player.position.set(30, 0, -26); // Step out onto front porch
+        this.player.heading = Math.PI; // Face street
+        this.camera.yaw = Math.PI;
+        this.camera.isInteriorMode = false;
+        this.isInApartmentInterior = false;
+
+        if (currentObj.id === 'exit_apartment') {
+          this.missionMgr.advanceObjective(); // Completes M01!
+        }
       }
     }
 

@@ -64,6 +64,7 @@ export class HUD {
   // Minimap Canvas
   private minimapCanvas: HTMLCanvasElement;
   private minimapCtx: CanvasRenderingContext2D;
+  private districtLabelEl: HTMLElement | null = null;
 
   // Narration & Voice
   private narrationBarEl: HTMLElement;
@@ -102,6 +103,7 @@ export class HUD {
     this.interactionPromptEl = document.getElementById('interaction-prompt')!;
     this.promptKeyEl = document.getElementById('prompt-key')!;
     this.promptLabelEl = document.getElementById('prompt-label')!;
+    this.districtLabelEl = document.getElementById('minimap-district-label');
 
     this.crosshairEl = document.getElementById('crosshair')!;
 
@@ -249,6 +251,19 @@ export class HUD {
       this.interactionPromptEl.classList.add('hidden');
     }
 
+    // Update Minimap District Label
+    if (this.districtLabelEl) {
+      if (player.position.x > 250 && player.position.z < -250) {
+        this.districtLabelEl.innerText = '128 EASTLINE // UNIT 102';
+      } else if (player.position.z < -80) {
+        this.districtLabelEl.innerText = 'OLD HARBOR';
+      } else if (player.position.z > 30) {
+        this.districtLabelEl.innerText = 'SOUTHSIDE';
+      } else {
+        this.districtLabelEl.innerText = 'EASTLINE';
+      }
+    }
+
     // 6. Draw Minimap Radar
     this.renderMinimap(player, activeVehicle, missionMgr, world);
   }
@@ -263,7 +278,6 @@ export class HUD {
     const w = this.minimapCanvas.width;
     const h = this.minimapCanvas.height;
     const center = w / 2;
-    const zoom = 0.85; // Pixels per world meter
 
     // Clear with dark surface background
     ctx.fillStyle = '#101419';
@@ -277,54 +291,124 @@ export class HUD {
     ctx.translate(center, center);
     ctx.rotate(heading);
 
-    // Draw Roads
-    ctx.strokeStyle = '#2d3748';
-    world.roads.forEach(road => {
-      const x1 = (road.x1 - playerPos.x) * zoom;
-      const z1 = (road.z1 - playerPos.z) * zoom;
-      const x2 = (road.x2 - playerPos.x) * zoom;
-      const z2 = (road.z2 - playerPos.z) * zoom;
+    // If inside Lena's Apartment interior
+    if (playerPos.x > 250 && playerPos.z < -250) {
+      const aptZoom = 5.5; // High-detail room zoom
+      const rx = (300 - 5 - playerPos.x) * aptZoom;
+      const rz = (-300 - 4 - playerPos.z) * aptZoom;
 
-      ctx.lineWidth = road.width * zoom;
-      ctx.beginPath();
-      ctx.moveTo(x1, z1);
-      ctx.lineTo(x2, z2);
-      ctx.stroke();
-    });
+      // Floor
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(rx, rz, 10 * aptZoom, 8 * aptZoom);
 
-    // Draw Buildings
-    ctx.fillStyle = '#1c2430';
-    world.buildingRects.forEach(b => {
-      const bx = (b.x - b.w / 2 - playerPos.x) * zoom;
-      const bz = (b.z - b.d / 2 - playerPos.z) * zoom;
-      ctx.fillRect(bx, bz, b.w * zoom, b.d * zoom);
-    });
-
-    // Draw Mission Objective Waypoint & GPS Route
-    const currentObj = missionMgr.getCurrentObjective();
-    if (currentObj && currentObj.targetPosition) {
-      const ox = (currentObj.targetPosition.x - playerPos.x) * zoom;
-      const oz = (currentObj.targetPosition.z - playerPos.z) * zoom;
-
-      // Draw dashed GPS guidance line from player to waypoint
-      ctx.strokeStyle = '#e58e26';
+      // Walls
+      ctx.strokeStyle = '#0284c7';
       ctx.lineWidth = 2.0;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(ox, oz);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.strokeRect(rx, rz, 10 * aptZoom, 8 * aptZoom);
 
-      // Draw diamond waypoint
-      ctx.fillStyle = '#e58e26'; // Amber mission icon
-      ctx.beginPath();
-      ctx.arc(ox, oz, 5.5, 0, Math.PI * 2);
-      ctx.fill();
+      // Living Room Persian Rug
+      const rugX = (300 - 2.1 - playerPos.x) * aptZoom;
+      const rugZ = (-300 - 1.6 - playerPos.z) * aptZoom;
+      ctx.fillStyle = '#831843';
+      ctx.fillRect(rugX, rugZ, 4.2 * aptZoom, 3.2 * aptZoom);
 
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1.5;
+      // Investigation Desk
+      const dx = (297.2 - playerPos.x) * aptZoom;
+      const dz = (-302.2 - playerPos.z) * aptZoom;
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(dx - 1.2 * aptZoom, dz - 0.65 * aptZoom, 2.4 * aptZoom, 1.3 * aptZoom);
+
+      // Bed
+      const bx = (303.4 - playerPos.x) * aptZoom;
+      const bz = (-301.8 - playerPos.z) * aptZoom;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(bx - 1.1 * aptZoom, bz - 0.8 * aptZoom, 2.2 * aptZoom, 1.6 * aptZoom);
+
+      // Entrance Door
+      const doorX = (300 - playerPos.x) * aptZoom;
+      const doorZ = (-296 - playerPos.z) * aptZoom;
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(doorX - 0.7 * aptZoom, doorZ);
+      ctx.lineTo(doorX + 0.7 * aptZoom, doorZ);
       ctx.stroke();
+
+      // GPS Guidance Line to Objective inside room
+      const currentObj = missionMgr.getCurrentObjective();
+      if (currentObj && currentObj.targetPosition) {
+        const ox = (currentObj.targetPosition.x - playerPos.x) * aptZoom;
+        const oz = (currentObj.targetPosition.z - playerPos.z) * aptZoom;
+
+        ctx.strokeStyle = '#e58e26';
+        ctx.lineWidth = 2.0;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(ox, oz);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#e58e26';
+        ctx.beginPath();
+        ctx.arc(ox, oz, 5.0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    } else {
+      const zoom = 0.85; // Pixels per world meter
+
+      // Draw Roads
+      ctx.strokeStyle = '#2d3748';
+      world.roads.forEach(road => {
+        const x1 = (road.x1 - playerPos.x) * zoom;
+        const z1 = (road.z1 - playerPos.z) * zoom;
+        const x2 = (road.x2 - playerPos.x) * zoom;
+        const z2 = (road.z2 - playerPos.z) * zoom;
+
+        ctx.lineWidth = road.width * zoom;
+        ctx.beginPath();
+        ctx.moveTo(x1, z1);
+        ctx.lineTo(x2, z2);
+        ctx.stroke();
+      });
+
+      // Draw Buildings
+      ctx.fillStyle = '#1c2430';
+      world.buildingRects.forEach(b => {
+        const bx = (b.x - b.w / 2 - playerPos.x) * zoom;
+        const bz = (b.z - b.d / 2 - playerPos.z) * zoom;
+        ctx.fillRect(bx, bz, b.w * zoom, b.d * zoom);
+      });
+
+      // Draw Mission Objective Waypoint & GPS Route
+      const currentObj = missionMgr.getCurrentObjective();
+      if (currentObj && currentObj.targetPosition) {
+        const ox = (currentObj.targetPosition.x - playerPos.x) * zoom;
+        const oz = (currentObj.targetPosition.z - playerPos.z) * zoom;
+
+        // Draw dashed GPS guidance line from player to waypoint
+        ctx.strokeStyle = '#e58e26';
+        ctx.lineWidth = 2.0;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(ox, oz);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw diamond waypoint
+        ctx.fillStyle = '#e58e26'; // Amber mission icon
+        ctx.beginPath();
+        ctx.arc(ox, oz, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
