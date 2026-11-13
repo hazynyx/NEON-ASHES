@@ -56,6 +56,7 @@
 | Mission M04 — Cold Storage | [COMPLETE] | Playable start-to-finish: Warehouse 19 interior, manifest inspection, drive pickup, ambush, escape |
 | Mission M05 — The Journalist | [COMPLETE] | Playable start-to-finish: Southside Diner, Mara Vale dialogue, Meridian office infiltration, evidence |
 | UI & HUD (No Glassmorphism) | [COMPLETE] | Solid dark surfaces (`#0B0D0F`, `#15181B`, `#E58E26`), minimap, speedo, modals |
+| Developer Debug & Mission Warp Menu | [COMPLETE] | Dedicated developer console (`F2` / `~` / HUD `DEV [F2]`), mission warp, objective jump, fast travel to 11 POIs, cheats, spawner |
 | Pause Menu & System Hub | [COMPLETE] | Integrated hub (`ESC`/`P`) with tabs for Map, Log, Graphics, Settings, Save/Load, Controls |
 | Tactical World Map & GPS | [COMPLETE] | 2D vector map canvas (`M` key) showing streets, landmarks, vehicle, objective, and player arrow |
 | Graphic & Audio Settings | [COMPLETE] | Real-time sliders/toggles: Exposure (0.8–2.4x), Shadows, Res Scale (50–100%), Fog, Volume, Sens, Invert Y |
@@ -277,13 +278,53 @@
     - `m02_crack_safe_prompt.png`.
     - `m02_mission_passed.png`.
 
+### 2026-11-13 (Session 9)
+- **Developer Debug Menu & Mission Warp System (`src/ui/DebugMenu.ts`, `src/core/Game.ts`, `src/missions/MissionManager.ts`, `src/player/Player.ts`, `src/vehicles/VehicleManager.ts`):**
+  - Implemented full standalone developer debug controller toggled via `F2`, `~` (`Backquote`), or the top-right HUD button (`DEV [F2]`).
+  - Strict adherence to solid, grounded UI (NO glassmorphism) using `#0b0d10`, `#11151c`, `#1e293b` with indigo (`#6366f1`) and amber (`#e58e26`) accents.
+  - **Missions & Warp Tab:**
+    - Dropdown mission selector (M01 Home Again, M02 Old Debts, M03 The Harbor, M04 Cold Storage, M05 The Journalist).
+    - Objective stage selector populating real stage names dynamically upon mission selection.
+    - **Warp to Mission & Start**: Automatically sets up prerequisites (opens required shutters, sets camera mode, sets ambient time), starts mission cleanly, and warps Kaleb Voss directly to the mission start point.
+    - **Jump to Selected Objective**: Directly moves active mission to chosen stage (`MissionManager.jumpToObjective()`) and warps player to that objective's exact coordinates.
+    - **Advance +1 Objective** & **Instant Pass Mission** for rapid testing workflows.
+    - Real-time active mission readout card with live cash and health.
+  - **Fast Travel Tab:**
+    - 11 direct instant teleport buttons to all key city landmarks and interiors:
+      - Lena's Apartment (Outside & Inside Unit 102)
+      - Adrian's Auto Repair (Forecourt & Inside Workshop)
+      - Southside Diner (Patio)
+      - Old Harbor Pier 19 (Entrance)
+      - Pier 19 Container Stack (Vantage Point)
+      - Warehouse 19 (Security Entrance & Terminal Desk)
+      - Meridian Properties Tower
+      - Central Metro Clinic (Respawn Point)
+      - Downtown Main Intersection
+  - **Player & Cheats Tab:**
+    - **God Mode** toggle button (`player.isGodMode` preventing damage in `takeDamage()`).
+    - **Full Health & Stamina** instant refill.
+    - **Give +$1,000 Cash** and **Give +$10,000 Cash**.
+    - **Give All Weapons & Max Ammo** (unlocks shotgun, fills pistol and shotgun clips/reserves).
+    - **Kill Player (Test WASTED)** triggering instant ragdoll and death sequence.
+    - **Set Wanted Level** buttons (0 to 5 stars).
+  - **World & Vehicles Tab:**
+    - Vehicle Spawner: Spawns Vesper Sedan, VCPD Police Cruiser, or Metro Sport Coupe directly 6m in front of player with forward heading.
+    - Time of Day Presets: Dawn (06:30), Noon (12:00), Dusk (19:00), Midnight (00:00).
+    - World Interactive Shutters: Toggles Adrian's Garage shutter and Warehouse 19 security roll-up gate on demand.
+  - **Live Coordinates Telemetry:**
+    - Real-time bottom bar displaying `POS: X: ..., Y: ..., Z: ... | HEADING: ...°`.
+  - **Pointer Lock Safety Guard:**
+    - Unlocks pointer lock upon opening; guards `onPointerLockChange` in `Game.ts` so opening the debug menu never triggers the Pause Menu or Map.
+  - **Modular Cleanup Ready:**
+    - Cleanly separated into `src/ui/DebugMenu.ts` and `#debug-menu` modal in `index.html`. Can be easily removed or disabled with zero impact on gameplay code prior to final release.
+  - **Automated Verification Suite (`scripts/test_debug_menu.js`):**
+    - Verified all 6 automated tests: opening menu, fast travel grid, player cheats (+cash, god mode, weapons), world spawner, warping into M03 at Pier 19, and warping into M05 at Southside Diner.
+    - Screenshots captured: `debug_menu_missions_tab.png`, `debug_menu_fast_travel_tab.png`, `debug_menu_player_cheats_tab.png`, `debug_menu_world_spawner_tab.png`, `debug_warp_m03_pier19.png`, `debug_warp_m05_diner.png`.
+
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
-- **All reported Mission 2 issues are completely resolved and verified:**
-  1. Adrian's Auto Repair garage is now a fully built, highly detailed, playable workshop building with car lift, workbench, safe, and animated roll-up door.
-  2. Player death at 0 HP now triggers ragdoll collapse, audio flatline, WASTED screen, medical fee deduction, and medical clinic respawn.
-  3. Jonah Reyes now has a dedicated mechanic model (coveralls, toolbelt, cap, torque wrench in hand) stationed clearly on the forecourt with flawless dialogue interaction.
-  4. GTA 5 camera view cycling system (`V` key) implemented with First-Person, Close, Medium, Far, and Vehicle Hood Cam views.
+- **Developer Debug Menu & Mission Warp System Complete:**
+  - Both developer and user can now press `F2` or click `DEV [F2]` on the HUD at any time to freely warp to any mission (M01–M05), jump directly to specific stages, fast-travel across Vespera City, toggle god mode, give weapons/cash, spawn vehicles, or change time of day without needing to play sequentially.
 - **Next Task:**
-  - Mission M03 ("The Harbor") / M04 polish and Act II Mission M06 ("The City Hall Connection").
+  - Polish Mission M03 ("The Harbor") and M04 ("Cold Storage"), or proceed to Act II Mission M06 ("The City Hall Connection").
