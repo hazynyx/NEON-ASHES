@@ -52,7 +52,7 @@ export class Game {
 
   // Garage safe state for M02
   private garageShutterPos: THREE.Vector3 = new THREE.Vector3(-60, 0, 64);
-  private garageSafePos: THREE.Vector3 = new THREE.Vector3(-64, 0, 54);
+  private garageSafePos: THREE.Vector3 = new THREE.Vector3(-64, 0, 39);
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
@@ -617,10 +617,10 @@ export class Game {
     // Objective: enter_garage
     if (currentObj.id === 'enter_garage') {
       const dist = this.player.position.distanceTo(this.garageShutterPos);
-      if (dist < 4.0 && this.input.isKeyPressed('KeyE')) {
-        // Step into garage workshop
-        this.player.position.set(-62, 0, 56);
+      if (dist < 4.5 && this.input.isKeyPressed('KeyE')) {
+        this.world.openGarageShutter();
         this.audio.playDoorSlam();
+        this.hud.showNarration('WORKSHOP', "Workshop shutter raised. Adrian's workbench and safe are in the back bay.");
         this.missionMgr.advanceObjective();
       }
     }
@@ -632,10 +632,21 @@ export class Game {
         this.audio.playUIClick();
         this.audio.playReload();
 
+        // Hide investigation beacon
+        if (this.world.garageBeaconGroup) {
+          this.world.garageBeaconGroup.visible = false;
+        }
+
+        // Unlock shotgun and ammo
+        this.player.hasShotgun = true;
+        this.player.shotgunReserve += 18;
+
+        this.hud.showNarration('KALEB', "Adrian's wall safe... Lena's journal is here, along with shipping manifests from Old Harbor Pier 19. Also found a 12G tactical shotgun!");
+
         // Trigger Syndicate Ambush
         this.enemyMgr.spawnSyndicateAmbush(
-          new THREE.Vector3(-58, 0, 62),
-          new THREE.Vector3(-64, 0, 62)
+          new THREE.Vector3(-58, 0, 61),
+          new THREE.Vector3(-62, 0, 61)
         );
 
         this.missionMgr.advanceObjective();

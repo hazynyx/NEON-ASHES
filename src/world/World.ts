@@ -36,6 +36,12 @@ export class World {
   public warehouseShutterCollider!: THREE.Box3;
   public isWarehouseShutterOpen: boolean = false;
 
+  // Adrian's Garage Workshop & Shutter
+  public garageShutterMesh!: THREE.Mesh;
+  public garageShutterCollider!: THREE.Box3;
+  public isGarageShutterOpen: boolean = false;
+  public garageBeaconGroup!: THREE.Group;
+
   // Streetlights
   private streetlightPoints: THREE.PointLight[] = [];
 
@@ -316,47 +322,421 @@ export class World {
   }
 
   private createAdrianGarage(): void {
-    const pos = this.adrianGaragePos;
-    const width = 26;
+    const pos = this.adrianGaragePos; // (-60, 0, 50)
+    const width = 24;
     const depth = 28;
-    const height = 9;
+    const height = 8.5;
 
-    const gGeo = new THREE.BoxGeometry(width, height, depth);
-    const gMat = new THREE.MeshStandardMaterial({
-      color: 0x374151, // Industrial steel/brick
-      roughness: 0.8,
-      metalness: 0.3
+    // Materials
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0x2e3440, // Weathered industrial steel & charcoal masonry
+      roughness: 0.85,
+      metalness: 0.25
+    });
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x23272e, // Oily concrete slab
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    const apronMat = new THREE.MeshStandardMaterial({
+      color: 0x333842, // Weathered asphalt driveway apron
+      roughness: 0.92,
+      metalness: 0.05
+    });
+    const steelMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.4,
+      metalness: 0.8
+    });
+    const shutterMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b, // Galvanized corrugated roll-up shutter
+      metalness: 0.75,
+      roughness: 0.35
+    });
+    const hazardMat = new THREE.MeshStandardMaterial({
+      color: 0xeab308, // Safety yellow warning stripe
+      roughness: 0.5
     });
 
-    const garage = new THREE.Mesh(gGeo, gMat);
-    garage.position.set(pos.x, height / 2, pos.z);
-    garage.castShadow = true;
-    garage.receiveShadow = true;
-    this.scene.add(garage);
+    // 1. Interior Concrete Slab
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(width, 0.2, depth), floorMat);
+    floor.position.set(pos.x, 0.1, pos.z);
+    floor.receiveShadow = true;
+    this.scene.add(floor);
 
-    // Collider
-    const bbox = new THREE.Box3().setFromObject(garage);
-    this.colliders.push(bbox);
+    // Hazard safety stripe around work bays
+    const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(8, 0.02, 12), hazardMat);
+    stripe1.position.set(pos.x + 5, 0.21, pos.z);
+    this.scene.add(stripe1);
+
+    // 2. Forecourt Apron (Driveway leading out to street)
+    const apron = new THREE.Mesh(new THREE.BoxGeometry(width, 0.1, 14), apronMat);
+    apron.position.set(pos.x, 0.05, pos.z + depth / 2 + 7);
+    apron.receiveShadow = true;
+    this.scene.add(apron);
+
+    // 3. Hollow Perimeter Walls
+    // North Wall (Back)
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(width + 1.2, height, 1.2), wallMat);
+    backWall.position.set(pos.x, height / 2, pos.z - depth / 2);
+    backWall.castShadow = true;
+    backWall.receiveShadow = true;
+    this.scene.add(backWall);
+    this.colliders.push(new THREE.Box3().setFromObject(backWall));
+
+    // West Wall (Left)
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1.2, height, depth), wallMat);
+    leftWall.position.set(pos.x - width / 2, height / 2, pos.z);
+    leftWall.castShadow = true;
+    leftWall.receiveShadow = true;
+    this.scene.add(leftWall);
+    this.colliders.push(new THREE.Box3().setFromObject(leftWall));
+
+    // East Wall (Right)
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1.2, height, depth), wallMat);
+    rightWall.position.set(pos.x + width / 2, height / 2, pos.z);
+    rightWall.castShadow = true;
+    rightWall.receiveShadow = true;
+    this.scene.add(rightWall);
+    this.colliders.push(new THREE.Box3().setFromObject(rightWall));
+
+    // Front Wall Left Segment (Width 7.4m)
+    const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(7.4, height, 1.2), wallMat);
+    frontWallLeft.position.set(pos.x - 8.3, height / 2, pos.z + depth / 2);
+    frontWallLeft.castShadow = true;
+    frontWallLeft.receiveShadow = true;
+    this.scene.add(frontWallLeft);
+    this.colliders.push(new THREE.Box3().setFromObject(frontWallLeft));
+
+    // Front Wall Right Segment (Width 7.4m)
+    const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(7.4, height, 1.2), wallMat);
+    frontWallRight.position.set(pos.x + 8.3, height / 2, pos.z + depth / 2);
+    frontWallRight.castShadow = true;
+    frontWallRight.receiveShadow = true;
+    this.scene.add(frontWallRight);
+    this.colliders.push(new THREE.Box3().setFromObject(frontWallRight));
+
+    // Front Wall Header Beam (above shutter door, y = 5.4m to 8.5m)
+    const frontHeader = new THREE.Mesh(new THREE.BoxGeometry(9.4, 3.2, 1.2), wallMat);
+    frontHeader.position.set(pos.x, 7.0, pos.z + depth / 2);
+    frontHeader.castShadow = true;
+    this.scene.add(frontHeader);
+
+    // Roof
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(width + 2, 0.5, depth + 2), steelMat);
+    roof.position.set(pos.x, height + 0.25, pos.z);
+    this.scene.add(roof);
+
+    // 4. Roll-up Shutter Bay Door (8.8m wide, 5.4m tall)
+    const shutterGeo = new THREE.BoxGeometry(8.8, 5.4, 0.3);
+    this.garageShutterMesh = new THREE.Mesh(shutterGeo, shutterMat);
+    this.garageShutterMesh.position.set(pos.x, 2.7, pos.z + depth / 2);
+    this.garageShutterMesh.castShadow = true;
+    this.scene.add(this.garageShutterMesh);
+
+    this.garageShutterCollider = new THREE.Box3().setFromObject(this.garageShutterMesh);
+    this.colliders.push(this.garageShutterCollider);
+
+    // Register building rect for minimap
     this.buildingRects.push({ x: pos.x, z: pos.z, w: width, d: depth });
 
-    // Shutter door
-    const shutterGeo = new THREE.BoxGeometry(8, 6, 0.2);
-    const shutterMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.7, roughness: 0.4 });
-    const shutter = new THREE.Mesh(shutterGeo, shutterMat);
-    shutter.position.set(pos.x, 3, pos.z + depth / 2 + 0.1);
-    this.scene.add(shutter);
+    // 5. Exterior Neon Sign: "ADRIAN VOSS AUTO REPAIR"
+    const signGroup = new THREE.Group();
+    signGroup.position.set(pos.x, 7.2, pos.z + depth / 2 + 0.65);
 
-    // "VOSS AUTO REPAIR" Sign
-    const signGeo = new THREE.BoxGeometry(12, 1.2, 0.2);
-    const signMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 }); // Light blue neon
-    const sign = new THREE.Mesh(signGeo, signMat);
-    sign.position.set(pos.x, 7.5, pos.z + depth / 2 + 0.2);
-    this.scene.add(sign);
+    const signBacking = new THREE.Mesh(
+      new THREE.BoxGeometry(11, 1.6, 0.15),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 })
+    );
+    signGroup.add(signBacking);
 
+    const signNeon = new THREE.Mesh(
+      new THREE.BoxGeometry(10.2, 0.9, 0.08),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b }) // Amber industrial neon
+    );
+    signNeon.position.z = 0.1;
+    signGroup.add(signNeon);
+
+    const signLight = new THREE.PointLight(0xf59e0b, 2.5, 14);
+    signLight.position.set(0, 0, 1.2);
+    signGroup.add(signLight);
+
+    this.scene.add(signGroup);
+
+    // 6. Hydraulic Twin-Post Car Lift & Suspended Project Car (East Bay)
+    const liftCol1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 5.5, 0.4), steelMat);
+    liftCol1.position.set(pos.x + 5, 2.75, pos.z - 3.5);
+    this.scene.add(liftCol1);
+    this.colliders.push(new THREE.Box3().setFromObject(liftCol1));
+
+    const liftCol2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 5.5, 0.4), steelMat);
+    liftCol2.position.set(pos.x + 5, 2.75, pos.z + 3.5);
+    this.scene.add(liftCol2);
+    this.colliders.push(new THREE.Box3().setFromObject(liftCol2));
+
+    // Lift horizontal carriage crossbars
+    const liftArm1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 2.4), steelMat);
+    liftArm1.position.set(pos.x + 5, 2.0, pos.z - 2.0);
+    this.scene.add(liftArm1);
+
+    const liftArm2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 2.4), steelMat);
+    liftArm2.position.set(pos.x + 5, 2.0, pos.z + 2.0);
+    this.scene.add(liftArm2);
+
+    // Suspended Project Car (Chassis & Body on lift at y = 2.4m)
+    const carGroup = new THREE.Group();
+    carGroup.position.set(pos.x + 5, 2.4, pos.z);
+
+    const carBody = new THREE.Mesh(
+      new THREE.BoxGeometry(2.1, 1.0, 4.4),
+      new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.4, metalness: 0.6 }) // Crimson sports body
+    );
+    carBody.position.y = 0.5;
+    carBody.castShadow = true;
+    carGroup.add(carBody);
+
+    const carCabin = new THREE.Mesh(
+      new THREE.BoxGeometry(1.9, 0.7, 2.2),
+      new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.2, metalness: 0.8 })
+    );
+    carCabin.position.set(0, 1.25, -0.3);
+    carGroup.add(carCabin);
+
+    this.scene.add(carGroup);
+
+    // Low-angle inspection light under car
+    const undercarLight = new THREE.PointLight(0xffedd5, 1.8, 6);
+    undercarLight.position.set(pos.x + 5, 0.4, pos.z);
+    this.scene.add(undercarLight);
+
+    // 7. Adrian's Heavy-Duty Steel Workbench (West Bay against Back Wall)
+    const benchGroup = new THREE.Group();
+    benchGroup.position.set(pos.x - 4, 0, pos.z - depth / 2 + 3);
+
+    const benchTable = new THREE.Mesh(
+      new THREE.BoxGeometry(4.2, 1.1, 1.6),
+      new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.7 }) // Stained hardwood slab
+    );
+    benchTable.position.y = 0.55;
+    benchTable.castShadow = true;
+    benchTable.receiveShadow = true;
+    benchGroup.add(benchTable);
+
+    // Workbench steel legs
+    const legMat = steelMat;
+    const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 0.12), legMat);
+    leg1.position.set(-1.9, 0.55, -0.65);
+    benchGroup.add(leg1);
+    const leg2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 0.12), legMat);
+    leg2.position.set(1.9, 0.55, -0.65);
+    benchGroup.add(leg2);
+    const leg3 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 0.12), legMat);
+    leg3.position.set(-1.9, 0.55, 0.65);
+    benchGroup.add(leg3);
+    const leg4 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 0.12), legMat);
+    leg4.position.set(1.9, 0.55, 0.65);
+    benchGroup.add(leg4);
+
+    // Heavy Cast Iron Bench Vice
+    const vice = new THREE.Mesh(
+      new THREE.BoxGeometry(0.35, 0.35, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.9, roughness: 0.2 })
+    );
+    vice.position.set(-1.6, 1.25, 0.4);
+    benchGroup.add(vice);
+
+    // Toolboxes, socket set trays, spark plug boxes
+    const toolbox = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.3, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0xb91c1c, metalness: 0.7, roughness: 0.3 })
+    );
+    toolbox.position.set(1.2, 1.22, 0.3);
+    benchGroup.add(toolbox);
+
+    // Blueprints / documents on desk
+    const blueprint = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.02, 0.8),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.9 })
+    );
+    blueprint.position.set(-0.2, 1.11, 0.1);
+    benchGroup.add(blueprint);
+
+    // Green Banker's Workbench Lamp
+    const lampArm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5), steelMat);
+    lampArm.position.set(0.6, 1.35, -0.4);
+    benchGroup.add(lampArm);
+
+    const lampShade = new THREE.Mesh(
+      new THREE.BoxGeometry(0.35, 0.15, 0.2),
+      new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.3 }) // Green enamel shade
+    );
+    lampShade.position.set(0.6, 1.6, -0.3);
+    benchGroup.add(lampShade);
+
+    const benchLight = new THREE.PointLight(0xfff8db, 2.4, 7);
+    benchLight.position.set(0.6, 1.5, -0.3);
+    benchGroup.add(benchLight);
+
+    this.scene.add(benchGroup);
+    this.colliders.push(new THREE.Box3().setFromObject(benchGroup));
+
+    // 8. Tool Pegboard Mounted on North Back Wall behind workbench
+    const pegboard = new THREE.Mesh(
+      new THREE.BoxGeometry(4.0, 2.2, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 })
+    );
+    pegboard.position.set(pos.x - 4, 2.8, pos.z - depth / 2 + 0.65);
+    this.scene.add(pegboard);
+
+    // Hanging tools on pegboard (wrenches, pliers)
+    const chromeMat = new THREE.MeshStandardMaterial({ color: 0xcfd8dc, metalness: 0.9, roughness: 0.15 });
+    for (let i = -1.6; i <= 1.6; i += 0.45) {
+      const toolHanger = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.35, 0.04), chromeMat);
+      toolHanger.position.set(pos.x - 4 + i, 2.8, pos.z - depth / 2 + 0.72);
+      this.scene.add(toolHanger);
+    }
+
+    // 9. Adrian's Concealed Heavy Steel Wall Safe
+    // Positioned in back wall directly behind the workbench: (-64, 1.5, 36.65)
+    const safeGroup = new THREE.Group();
+    safeGroup.position.set(pos.x - 4, 1.5, pos.z - depth / 2 + 0.65);
+
+    // Reinforced safe frame
+    const safeFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(0.9, 0.9, 0.2),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.25 })
+    );
+    safeGroup.add(safeFrame);
+
+    // Combination lock dial & keypad
+    const dial = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.09, 0.06),
+      chromeMat
+    );
+    dial.rotation.x = Math.PI / 2;
+    dial.position.set(-0.15, 0, 0.12);
+    safeGroup.add(dial);
+
+    // Keypad LED
+    const keypadLed = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 0.04, 0.02),
+      new THREE.MeshBasicMaterial({ color: 0x10b981 }) // Blinking active green LED
+    );
+    keypadLed.position.set(0.18, 0.15, 0.11);
+    safeGroup.add(keypadLed);
+
+    // Hinged Aurelia license plates swung slightly open (concealment cover)
+    const plateCover = new THREE.Mesh(
+      new THREE.BoxGeometry(0.85, 0.35, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7, metalness: 0.4 })
+    );
+    plateCover.position.set(-0.1, -0.05, 0.14);
+    plateCover.rotation.y = -0.35; // Swung open to reveal lock
+    safeGroup.add(plateCover);
+
+    this.scene.add(safeGroup);
+
+    // 10. Pulsing Golden Investigation Beacon Ring for "crack_safe"
+    this.garageBeaconGroup = new THREE.Group();
+    this.garageBeaconGroup.position.set(pos.x - 4, 1.3, pos.z - depth / 2 + 2.5);
+
+    const beaconRingGeo = new THREE.TorusGeometry(0.38, 0.04, 8, 24);
+    const beaconRingMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+    const beaconRing = new THREE.Mesh(beaconRingGeo, beaconRingMat);
+    beaconRing.rotation.x = Math.PI / 2;
+    this.garageBeaconGroup.add(beaconRing);
+
+    const beaconLight = new THREE.PointLight(0xf59e0b, 2.0, 5);
+    beaconLight.position.y = 0.2;
+    this.garageBeaconGroup.add(beaconLight);
+
+    this.scene.add(this.garageBeaconGroup);
+
+    // 11. Workshop Shelving, Oil Drums & Gas Cylinders
+    // High industrial shelving against West wall
+    const shelfRack = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 5.5, 9.0),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 })
+    );
+    shelfRack.position.set(pos.x - width / 2 + 1.2, 2.75, pos.z + 1);
+    shelfRack.castShadow = true;
+    this.scene.add(shelfRack);
+    this.colliders.push(new THREE.Box3().setFromObject(shelfRack));
+
+    // Stacks of red oil drums in corner
+    const drumMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, metalness: 0.7, roughness: 0.35 });
+    const drumCoords = [
+      { x: pos.x - 9.5, z: pos.z - 8 },
+      { x: pos.x - 8.4, z: pos.z - 8 },
+      { x: pos.x - 8.9, z: pos.z - 7 }
+    ];
+    drumCoords.forEach(dc => {
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1.1, 16), drumMat);
+      drum.position.set(dc.x, 0.65, dc.z);
+      drum.castShadow = true;
+      this.scene.add(drum);
+      this.colliders.push(new THREE.Box3().setFromObject(drum));
+    });
+
+    // Tall gas welding tanks
+    const tankGeo = new THREE.CylinderGeometry(0.2, 0.2, 1.8, 16);
+    const tankMat1 = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.4 }); // Green Oxygen
+    const tankMat2 = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 }); // Blue Argon
+    const tank1 = new THREE.Mesh(tankGeo, tankMat1);
+    tank1.position.set(pos.x - 9.8, 1.0, pos.z - 10.5);
+    this.scene.add(tank1);
+    const tank2 = new THREE.Mesh(tankGeo, tankMat2);
+    tank2.position.set(pos.x - 9.2, 1.0, pos.z - 10.5);
+    this.scene.add(tank2);
+
+    // 12. Industrial Fluorescent Shop Lights (Suspended from ceiling)
+    const shopLight1 = new THREE.PointLight(0xfef08a, 2.6, 20);
+    shopLight1.position.set(pos.x - 4, 7.2, pos.z - 3);
+    this.scene.add(shopLight1);
+
+    const shopLight2 = new THREE.PointLight(0xfef08a, 2.6, 20);
+    shopLight2.position.set(pos.x + 5, 7.2, pos.z + 4);
+    this.scene.add(shopLight2);
+
+    // 13. Forecourt Props (Tire Stacks & Work Floodlight near Jonah)
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.95 });
+    for (let i = 0; i < 4; i++) {
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.26, 16), tireMat);
+      tire.position.set(pos.x + 6, 0.13 + i * 0.26, pos.z + depth / 2 + 4);
+      tire.castShadow = true;
+      this.scene.add(tire);
+      if (i === 0) {
+        this.colliders.push(new THREE.Box3().setFromObject(tire));
+      }
+    }
+
+    // Forecourt tripod work floodlight
+    const floodlightGroup = new THREE.Group();
+    floodlightGroup.position.set(pos.x + 6, 0, pos.z + depth / 2 + 6);
+
+    const tripod = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8), steelMat);
+    tripod.position.y = 0.9;
+    floodlightGroup.add(tripod);
+
+    const lampBox = new THREE.Mesh(
+      new THREE.BoxGeometry(0.4, 0.3, 0.2),
+      new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4 })
+    );
+    lampBox.position.set(0, 1.8, 0);
+    lampBox.rotation.y = -Math.PI / 4;
+    floodlightGroup.add(lampBox);
+
+    const floodlight = new THREE.PointLight(0xffedd5, 3.2, 16);
+    floodlight.position.set(0, 1.8, 0.2);
+    floodlightGroup.add(floodlight);
+
+    this.scene.add(floodlightGroup);
+
+    // POI Registration
     this.pois.push({
       id: 'adrian_garage',
       name: 'Adrian Voss Auto Repair',
-      position: new THREE.Vector3(pos.x, 0, pos.z + depth / 2 + 2.5),
+      position: new THREE.Vector3(pos.x, 0, pos.z + depth / 2 + 5),
       type: 'garage'
     });
   }
@@ -818,9 +1198,24 @@ export class World {
     }
   }
 
+  public openGarageShutter(): void {
+    if (this.isGarageShutterOpen) return;
+    this.isGarageShutterOpen = true;
+    const idx = this.colliders.indexOf(this.garageShutterCollider);
+    if (idx !== -1) {
+      this.colliders.splice(idx, 1);
+    }
+  }
+
   public update(deltaTime: number): void {
     if (this.isWarehouseShutterOpen && this.warehouseShutterMesh && this.warehouseShutterMesh.position.y < 9.5) {
       this.warehouseShutterMesh.position.y += deltaTime * 3.5;
+    }
+    if (this.isGarageShutterOpen && this.garageShutterMesh && this.garageShutterMesh.position.y < 7.8) {
+      this.garageShutterMesh.position.y += deltaTime * 4.5;
+    }
+    if (this.garageBeaconGroup) {
+      this.garageBeaconGroup.rotation.y += deltaTime * 2.5;
     }
     if (this.apartmentInterior) {
       this.apartmentInterior.update(deltaTime);
