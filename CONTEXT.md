@@ -11,26 +11,29 @@
 ---
 
 ## 2. CURRENT DEVELOPMENT STATUS
-- **Overall Completion:** 42% (Phase 0 Foundation, Phase 1 Prototype, Act I Missions M01-M04, and Act II Mission M05 "The Journalist" Complete!)
-- **Current Milestone:** Phase 3 / Act II: The Money Trail (M05 Complete, preparing Mission M06 "The City Hall Connection" & Police Pursuit AI)
-- **Current Focus:** Mission M06 implementation and Police Cruiser patrol/pursuit AI (`src/police/PoliceAI.ts`).
+- **Overall Completion:** 78% (Phase 0 Foundation, Phase 1 Prototype, Act I Missions M01-M04, Act II Missions M05, M06, M07, and M08 Complete!)
+- **Current Milestone:** Phase 3 / Act II: The Money Trail & Act III Setup (M01-M08 fully playable and chained).
+- **Current Focus:** Police Cruiser patrol/pursuit AI (`src/police/PoliceAI.ts`) and Act III climax planning.
 - **Last Completed:**
-  - **Dynamic Traffic AI (`src/vehicles/VehicleManager.ts`):** Ambient civilian traffic navigating road lanes (Vesper Cab, Metro Coupe, Harbor Sedan, Cargo Wagon) with illuminated headlights, lane tracking, obstacle/proximity braking, and full carjacking/entry via `[E]`.
-  - **Ambient Pedestrian AI (`src/ai/NPCManager.ts`):** Sidewalk pedestrians patrolling city blocks with procedural walking speed, alternating leg swing animation, and reactive fleeing.
-  - **3D Destination Waypoint Beacon (`src/world/DestinationMarker.ts`):** 32m tall vertical illuminated light pillar (`0xe58e26`), concentric pulsing ground radar rings, hovering rotating diamond marker, and ground point light.
-  - **Real-Time GPS Route Navigation (`src/ui/HUD.ts` & `src/ui/PauseMenu.ts`):** Dashed amber breadcrumb route line dynamically plotted on both the in-game Minimap and the Fullscreen Tactical Map (`M` key) pointing directly to the active objective.
-  - **Act II Mission M05 ("The Journalist") (`src/missions/data/M05_TheJournalist.ts`):**
-    - Southside Diner with neon sign `SOUTHSIDE DINER // 24H` and outdoor covered patio.
-    - Story NPC **Mara Vale** with auburn hair and 6-part branching investigative dialogue.
-    - Meridian Properties corporate office with archival desk, filing cabinets, and cyan terminal screen.
-    - Evidence Modal: Confidential municipal redevelopment buyout accord signed by Councilman Vance Albright.
-    - Mission rewards: +$1,800 cash, decrypted audio journal tape, shotgun ammo.
-- **Currently Broken:** None. All systems verified in automated browser playtest.
+  - **Mission Failure on Player Death System (`src/missions/MissionManager.ts`, `src/core/Game.ts`, `src/ui/HUD.ts`):**
+    - Immediate mission termination upon player death (HP = 0) with `isMissionActive = false` and `lastFailedMission = { id, stageIndex }`.
+    - Hostile combatant purge via `enemyMgr.clear()`.
+    - Synthesized descending minor audio stinger in `AudioManager.playMissionFailed()`.
+    - Dedicated solid crimson `MISSION FAILED` modal with `RETRY MISSION` (warp to stage 0) and `ABANDON MISSION (FREE ROAM)` buttons.
+  - **Developer Debug Menu & Pause Menu Mutual Exclusivity (`src/ui/DebugMenu.ts`, `src/ui/PauseMenu.ts`, `src/core/Game.ts`):**
+    - Enforced strict mutual exclusivity between `F2`/`Backquote` and `Escape`/`KeyP`.
+    - Canvas click-to-lock pointer lock reacquisition listener.
+    - Start screen underlay hiding during debug warps to prevent prologue restarts.
+  - **Campaign Missions M06, M07, M08 Integration:**
+    - **M06 ("Bad Business"):** Eastline construction yard tailing, Dominic Alvarez payoff evidence photograph modal, Apex Land Holdings shell company discovery.
+    - **M07 ("Old Friends"):** Jonah's debt resolution with 3-way branching choice encounter (A: $2,000 cash debt payoff; B: syndicate ambush combat shootout; C: Vincent Drake harbor contraband cache retrieval).
+    - **M08 ("Paper Trail"):** Vespera Municipal Trust night infiltration, filing archive inspection, executive terminal 256-bit AES $4.2M wire transfer ledger modal, high-alert perimeter evasion.
+    - **E2E Campaign Test Suite (`scripts/test_e2e_campaign.js`):** 90/90 assertions passed (100% pass rate).
+- **Currently Broken:** None. All 8 missions and debug/failure systems verified in automated browser playtest.
 - **Next Tasks:**
-  1. Implement Mission M06 ("The City Hall Connection"):
-     - Albright's mayoral campaign gala surveillance and wiretap placement.
-  2. Implement Police Pursuit AI (`src/police/PoliceAI.ts`):
+  1. Implement Police Pursuit AI (`src/police/PoliceAI.ts`):
      - Police cruisers actively pursuing Kaleb upon reaching 2+ wanted stars with siren audio and roadblock tactics.
+  2. Implement Act III Climax Missions M09 ("Showdown at City Hall") & M10 ("The Docks Finale").
 
 ---
 
