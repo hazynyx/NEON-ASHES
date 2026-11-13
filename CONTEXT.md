@@ -223,17 +223,67 @@
     - End-to-end Puppeteer verification testing: entering Unit 102, camera alignment, desk investigation prompt, harbor photo modal examination, exit door prompt, and mission passed rewards.
     - Captured verified screenshots: `m01_apartment_just_entered.png`, `m01_apartment_desk_search_prompt.png`, `m01_apartment_evidence_modal.png`, `m01_apartment_exit_door_prompt.png`, `m01_mission_passed_outside.png`.
 
+### 2026-11-13 (Session 8)
+- **GTA 5 Style Camera View Cycling System (`src/rendering/Camera.ts` & `src/core/Game.ts`):**
+  - Added multi-perspective camera cycling bound to `V` key, replicating Grand Theft Auto V:
+    - **On Foot Modes:** Close Over-The-Shoulder (`1.65m`), Medium Standard (`3.4m`), Far Tactical (`5.8m`), and First-Person Head-Cam (`0.0m`).
+    - **In Vehicle Modes:** Vehicle Close Chase (`5.8m`), Vehicle Far Chase (`8.6m`), and Vehicle Hood/Bumper Cam (`0.0m`).
+  - Implemented First-Person mesh culling in `Player.ts`: completely hides head, hair, torso, and legs while retaining the right weapon arm, service pistol, and shotgun in view.
+  - Added `#camera-view-badge` HUD element with smooth fade-out confirming view mode name (`VIEW // CLOSE`, `VIEW // MEDIUM`, `VIEW // FAR`, `VIEW // FIRST PERSON`, `VEHICLE // HOOD CAM`).
+  - Verified across all camera views with screenshot captures (`gta5_camera_close.png`, `gta5_camera_far.png`, `gta5_camera_firstperson.png`, `gta5_camera_vehicle_hood.png`).
+
+- **Player Death System & WASTED Screen (`src/player/Player.ts`, `src/core/Game.ts`, `src/ui/HUD.ts`, `src/style.css`):**
+  - Fixed invincibility at 0 HP: `Player.takeDamage()` sets `isDead = true`, cancels horizontal velocity, and triggers ragdoll collapse (`rotation.x = -Math.PI / 2`, `rotation.z = 0.25`, limbs sprawled).
+  - Web Audio synthesis `AudioManager.playWastedSound()`: deep sub-bass impact boom (85Hz down to 24Hz), muffled low-pass impact thud, and eerie high-pitched flatline tinnitus tone.
+  - Implemented solid `#wasted-screen` overlay (strictly adhering to NO GLASSMORPHISM): dark red radial vignette, solid `#0b0d0f` card with crimson border `#991b1b`, glowing crimson `WASTED` title, medical expense deduction notice (`-$100`), and 3.2-second animated progress bar.
+  - Automated clinic respawn: deducts medical fee, restores 100 HP, resets character rotation and limbs, snaps camera, and respawns outside Lena's Apartment Safehouse / Central Metro Clinic at `(30, 0, -22)`.
+  - Blocked pointer lock callback from opening the Pause Menu / Map over the WASTED death screen.
+
+- **Adrian's Auto Repair Garage Workshop & Roll-Up Shutter (`src/world/World.ts`):**
+  - Replaced legacy solid collision box at `(-60, 0, 50)` with a fully playable, hollow, high-detail automotive workshop ($24\text{m} \times 28\text{m} \times 8.5\text{m}$):
+    - Concrete workshop floor with grease stains, oily patina, and yellow hazard safety stripes around work bays.
+    - Weathered dark masonry and industrial steel walls with individual Box3 colliders.
+    - Large front bay opening with motorized roll-up security shutter door (`8.8m x 5.4m x 0.3m`) that animates upward to $y = 7.8\text{m}$ upon interaction (`[E] Open Workshop Shutter`) and removes shutter collision.
+    - Hydraulic twin-post car lift with structural posts and an elevated project sports coupe (`0x991b1b`) suspended at $y = 2.4\text{m}$ with undercarriage inspection light.
+    - Adrian's heavy-duty steel-frame hardwood workbench at `(-64, 0, 38)` equipped with cast-iron vice, open socket trays, toolboxes, blueprints, and green-shaded task lamp.
+    - Wall-mounted tool pegboard hanging chrome vanadium wrenches and pliers.
+    - Adrian's concealed heavy wall safe embedded in back wall at `(-64, 1.5, 36.65)` behind hinged Aurelia vintage license plates with active blinking green LED.
+    - Pulsing golden investigation beacon hovering above the safe/workbench for objective `crack_safe`.
+    - Heavy storage shelf racks, oxygen/argon welding cylinders, red oil drums, and ceiling fluorescent shop lights.
+    - Concrete forecourt driveway apron extending to street with racing tire stacks and work floodlight.
+
+- **Jonah Reyes Story Character & Forecourt Setup (`src/ai/NPCManager.ts`):**
+  - Built custom mechanic 3D model for Jonah Reyes:
+    - Petrol navy work coveralls (`0x1e3a5f`) with embroidered amber "JONAH" chest badge.
+    - Heavy leather toolbelt with hanging socket wrench.
+    - Grey mechanic baseball cap with forward visor and weathered facial features.
+    - Right arm holding a heavy-duty chrome adjustable torque wrench.
+    - Steel-toe work boots with reinforced knee patches.
+  - Positioned Jonah in the clear forecourt at `(-56, 0, 67)` facing South towards the approaching street.
+  - Relocated conflicting ambient pedestrian to prevent interaction theft.
+
+- **Mission M02 ("Old Debts") Full Playability & Regression Suite (`scripts/test_m02_garage.js`):**
+  - Updated M02 objective coordinates and interactions:
+    - `drive_to_garage` -> `talk_to_jonah` outside the garage.
+    - `enter_garage` raises the workshop shutter with door slam SFX.
+    - `crack_safe` at workbench inspects safe, unhides evidence, and unlocks 12G tactical shotgun + ammo.
+    - `eliminate_syndicate` spawns 2 Marrow Syndicate ambushers inside the garage entrance.
+    - `escape_area` triggers vehicular escape past 65m perimeter.
+  - Automated Puppeteer playtest completed 100% of objectives and captured verified screenshots:
+    - `gta5_camera_views.png`, `gta5_camera_close.png`, `gta5_camera_far.png`, `gta5_camera_firstperson.png`, `gta5_camera_vehicle_hood.png`.
+    - `m02_player_wasted_screen.png`.
+    - `m02_jonah_mechanic_talk.png`.
+    - `m02_garage_workshop_inside.png`.
+    - `m02_crack_safe_prompt.png`.
+    - `m02_mission_passed.png`.
+
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
-- **All core infrastructure systems are 100% complete:**
-  - Heads-Up Display (HUD) with minimap, speedometer, vitals, cash, clock, wanted stars, crosshair, and narration bar.
-  - Pause Menu & System Hub with Tactical Map, Graphic Settings, Audio/Game Settings, and Multi-Slot Save/Load.
-  - Vehicle physics and forward driving direction verified.
-  - Act I (Missions M01, M02, M03, M04) verified start-to-finish.
+- **All reported Mission 2 issues are completely resolved and verified:**
+  1. Adrian's Auto Repair garage is now a fully built, highly detailed, playable workshop building with car lift, workbench, safe, and animated roll-up door.
+  2. Player death at 0 HP now triggers ragdoll collapse, audio flatline, WASTED screen, medical fee deduction, and medical clinic respawn.
+  3. Jonah Reyes now has a dedicated mechanic model (coveralls, toolbelt, cap, torque wrench in hand) stationed clearly on the forecourt with flawless dialogue interaction.
+  4. GTA 5 camera view cycling system (`V` key) implemented with First-Person, Close, Medium, Far, and Vehicle Hood Cam views.
 - **Next Task:**
-  - Proceed directly to **Act II — The Money Trail (Mission M05 "The Journalist")**:
-    - Build Southside Diner exterior/interior and spawn investigative journalist **Mara Vale**.
-    - Dialogue exchange examining Lena's stolen notebook and decrypting the Pier 19 military drive.
-    - Infiltration of Meridian Properties corporate office in Central Vesper.
-    - Police pursuit cruiser AI (`src/police/PoliceAI.ts`).
+  - Mission M03 ("The Harbor") / M04 polish and Act II Mission M06 ("The City Hall Connection").
