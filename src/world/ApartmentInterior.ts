@@ -4,7 +4,7 @@ export class ApartmentInterior {
   public group: THREE.Group;
   public colliders: THREE.Box3[] = [];
   public origin: THREE.Vector3 = new THREE.Vector3(300, 0, -300);
-  public spawnPos: THREE.Vector3 = new THREE.Vector3(300, 0, -298.2);
+  public spawnPos: THREE.Vector3 = new THREE.Vector3(300, 0, -298.5);
   public deskPos: THREE.Vector3 = new THREE.Vector3(297.2, 0, -302.2);
   public exitDoorPos: THREE.Vector3 = new THREE.Vector3(300, 0, -296.8);
 

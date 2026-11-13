@@ -357,7 +357,7 @@ export class Game {
       }
 
       const distToExit = this.player.position.distanceTo(this.apartmentExitDoorPos);
-      if (distToExit < 3.0) {
+      if (distToExit < 3.2) {
         return { text: 'Leave Unit 102', key: 'E' };
       }
     }
@@ -366,7 +366,7 @@ export class Game {
     if (!this.isInApartmentInterior) {
       const distToDoor = this.player.position.distanceTo(this.apartmentDoorPos);
       if (distToDoor < 4.0) {
-        if (currentObj && currentObj.id === 'enter_apartment') {
+        if (currentObj && (currentObj.id === 'enter_apartment' || currentObj.id === 'search_room' || currentObj.id === 'inspect_photo')) {
           return { text: "Enter Lena's Apartment (Unit 102)", key: 'E' };
         } else if (this.missionMgr.completedMissions.has('M01')) {
           return { text: "Enter Safehouse (Unit 102)", key: 'E' };
@@ -463,21 +463,22 @@ export class Game {
       }
     }
 
-    // Objective: enter_apartment
-    if (currentObj.id === 'enter_apartment') {
+    // Objective: enter_apartment (or re-entry during M01 investigation)
+    if (currentObj.id === 'enter_apartment' || (!this.isInApartmentInterior && (currentObj.id === 'search_room' || currentObj.id === 'inspect_photo'))) {
       const dist = this.player.position.distanceTo(this.apartmentDoorPos);
       if (dist < 4.0 && this.input.isKeyPressed('KeyE')) {
         if (this.player.isInVehicle) {
           this.vehicleMgr.exitVehicle(this.player);
         }
         this.audio.playDoorSlam();
-        this.player.position.copy(this.world.apartmentInterior.spawnPos);
-        this.player.heading = 0; // Face North into the room towards the desk
-        this.camera.yaw = 0; // Camera behind Kaleb looking into the apartment
-        this.camera.pitch = 0.12;
-        this.camera.isInteriorMode = true;
         this.isInApartmentInterior = true;
-        this.missionMgr.advanceObjective(); // Advances to search_room
+        this.camera.isInteriorMode = true;
+        this.player.teleport(this.world.apartmentInterior.spawnPos, Math.PI); // Face North (Math.PI) into the room
+        this.camera.snap(this.player.position, 0, 0.10, this.world.colliders); // Camera behind Kaleb looking North
+
+        if (currentObj.id === 'enter_apartment') {
+          this.missionMgr.advanceObjective(); // Advances to search_room
+        }
 
         // Kaleb's interior monologue
         setTimeout(() => {
@@ -505,12 +506,10 @@ export class Game {
           this.vehicleMgr.exitVehicle(this.player);
         }
         this.audio.playDoorSlam();
-        this.player.position.copy(this.world.apartmentInterior.spawnPos);
-        this.player.heading = 0;
-        this.camera.yaw = 0;
-        this.camera.pitch = 0.12;
-        this.camera.isInteriorMode = true;
         this.isInApartmentInterior = true;
+        this.camera.isInteriorMode = true;
+        this.player.teleport(this.world.apartmentInterior.spawnPos, Math.PI);
+        this.camera.snap(this.player.position, 0, 0.10, this.world.colliders);
       }
     }
 
@@ -544,11 +543,11 @@ export class Game {
       const dist = this.player.position.distanceTo(this.apartmentExitDoorPos);
       if (dist < 3.0 && this.input.isKeyPressed('KeyE')) {
         this.audio.playDoorSlam();
-        this.player.position.set(30, 0, -26); // Step out onto front porch
-        this.player.heading = Math.PI; // Face street
-        this.camera.yaw = Math.PI;
-        this.camera.isInteriorMode = false;
         this.isInApartmentInterior = false;
+        this.camera.isInteriorMode = false;
+        const porchPos = new THREE.Vector3(30, 0, -26);
+        this.player.teleport(porchPos, 0); // Face street (South)
+        this.camera.snap(porchPos, Math.PI, 0.15, this.world.colliders); // Camera behind Kaleb looking South
 
         if (currentObj.id === 'exit_apartment') {
           this.missionMgr.advanceObjective(); // Completes M01!
