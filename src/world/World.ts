@@ -31,6 +31,19 @@ export class World {
   public meridianOfficePos: THREE.Vector3 = new THREE.Vector3(0, 0, -160);
   public meridianDeskPos: THREE.Vector3 = new THREE.Vector3(0, 0, -164);
 
+  // Mission M06: BAD BUSINESS locations
+  public redevelopmentSitePos: THREE.Vector3 = new THREE.Vector3(45, 0, -100);
+  public contractorMeetingPos: THREE.Vector3 = new THREE.Vector3(72, 0, -118);
+  public shellOfficePos: THREE.Vector3 = new THREE.Vector3(-25, 0, -140);
+
+  // Mission M07: OLD FRIENDS location
+  public harborDepotPos: THREE.Vector3 = new THREE.Vector3(30, 0, -145);
+
+  // Mission M08: PAPER TRAIL locations
+  public financeOfficePos: THREE.Vector3 = new THREE.Vector3(-35, 0, -135);
+  public financeArchivePos: THREE.Vector3 = new THREE.Vector3(-38, 0, -140);
+  public financeTerminalPos: THREE.Vector3 = new THREE.Vector3(-33, 0, -142);
+
   // Warehouse 19 Shutter & Interior
   public warehouseShutterMesh!: THREE.Mesh;
   public warehouseShutterCollider!: THREE.Box3;
@@ -86,7 +99,19 @@ export class World {
     // 8. Build Meridian Properties Corporate Office (Infiltration Location)
     this.createMeridianOffice();
 
-    // 9. Add Street Furniture & Props (Streetlights, Dumpsters, Hydrants)
+    // 9. Build Eastline Redevelopment Zone & Meeting Spot (M06)
+    this.createRedevelopmentZone();
+
+    // 10. Build Apex Land Holdings Shell Office (M06)
+    this.createShellOffice();
+
+    // 11. Build Harbor Depot Contraband Cache (M07)
+    this.createHarborDepotCache();
+
+    // 12. Build Vespera Municipal Trust Finance Office (M08)
+    this.createFinanceOffice();
+
+    // 13. Add Street Furniture & Props (Streetlights, Dumpsters, Hydrants)
     this.createStreetProps();
   }
 
@@ -1186,6 +1211,368 @@ export class World {
       id: 'meridian_properties',
       name: 'Meridian Properties Corporate Office',
       position: new THREE.Vector3(pos.x, 0, pos.z + depth / 2 + 2),
+      type: 'office'
+    });
+  }
+
+  private createRedevelopmentZone(): void {
+    const pos = this.redevelopmentSitePos;
+    const meetPos = this.contractorMeetingPos;
+
+    const barrierMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 });
+    const hazardMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+
+    // Construction Fence / Barrier perimeter around site
+    for (let i = -16; i <= 16; i += 8) {
+      const barrier = new THREE.Mesh(new THREE.BoxGeometry(6, 1.4, 0.4), hazardMat);
+      barrier.position.set(pos.x + i, 0.7, pos.z + 10);
+      this.scene.add(barrier);
+      this.colliders.push(new THREE.Box3().setFromObject(barrier));
+    }
+
+    // Overlook staging platform near pos (45, 0, -100)
+    const overlookPlat = new THREE.Mesh(new THREE.BoxGeometry(10, 0.25, 8), barrierMat);
+    overlookPlat.position.set(pos.x, 0.12, pos.z);
+    overlookPlat.receiveShadow = true;
+    this.scene.add(overlookPlat);
+
+    // Hazard sign: "EASTLINE REDEVELOPMENT // DEMOLITION IN PROGRESS"
+    const signGroup = new THREE.Group();
+    signGroup.position.set(pos.x, 2.5, pos.z + 9.8);
+    const signBoard = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.2, 0.1), hazardMat);
+    signGroup.add(signBoard);
+    const signBorder = new THREE.Mesh(new THREE.BoxGeometry(4.7, 1.4, 0.05), steelMat);
+    signGroup.add(signBorder);
+    this.scene.add(signGroup);
+
+    // Construction Floodlight pole at overlook
+    const floodlightPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 5), steelMat);
+    floodlightPole.position.set(pos.x - 4, 2.5, pos.z - 3);
+    this.scene.add(floodlightPole);
+    const floodlightLamp = new THREE.PointLight(0xfef08a, 2.8, 22);
+    floodlightLamp.position.set(pos.x - 4, 5, pos.z - 3);
+    this.scene.add(floodlightLamp);
+
+    // Demolition rubble / stacks in construction yard between pos and meetPos
+    const rubbleMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.95 });
+    const rubble1 = new THREE.Mesh(new THREE.BoxGeometry(5, 2.2, 6), rubbleMat);
+    rubble1.position.set(58, 1.1, -108);
+    this.scene.add(rubble1);
+    this.colliders.push(new THREE.Box3().setFromObject(rubble1));
+
+    // Scaffolding tower near meeting spot
+    const scaffold = new THREE.Mesh(new THREE.BoxGeometry(3, 8, 3), steelMat);
+    scaffold.position.set(meetPos.x - 5, 4, meetPos.z);
+    this.scene.add(scaffold);
+    this.colliders.push(new THREE.Box3().setFromObject(scaffold));
+
+    // Shipping container in the alley at meeting spot
+    const meetContainer = new THREE.Mesh(
+      new THREE.BoxGeometry(3, 2.8, 7),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.4 })
+    );
+    meetContainer.position.set(meetPos.x + 3.5, 1.4, meetPos.z);
+    this.scene.add(meetContainer);
+    this.colliders.push(new THREE.Box3().setFromObject(meetContainer));
+
+    // Wooden cargo pallets at meeting spot
+    const palletMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.85 });
+    const pallet = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 2.2), palletMat);
+    pallet.position.set(meetPos.x, 0.2, meetPos.z);
+    this.scene.add(pallet);
+
+    // Dim meeting area light
+    const alleyLight = new THREE.PointLight(0xf59e0b, 1.5, 12);
+    alleyLight.position.set(meetPos.x, 3.5, meetPos.z);
+    this.scene.add(alleyLight);
+
+    // POI Registration
+    this.pois.push({
+      id: 'redevelopment_site',
+      name: 'Eastline Redevelopment Zone',
+      position: this.redevelopmentSitePos.clone(),
+      type: 'office'
+    });
+  }
+
+  private createShellOffice(): void {
+    const pos = this.shellOfficePos;
+    const width = 22;
+    const depth = 20;
+    const height = 18;
+
+    // Commercial Office Building (Dark granite & tinted architectural glass)
+    const bMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.35,
+      metalness: 0.65
+    });
+    const officeMesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), bMat);
+    officeMesh.position.set(pos.x, height / 2, pos.z - depth / 2);
+    officeMesh.castShadow = true;
+    officeMesh.receiveShadow = true;
+    this.scene.add(officeMesh);
+
+    const bbox = new THREE.Box3().setFromObject(officeMesh);
+    this.colliders.push(bbox);
+    this.buildingRects.push({ x: pos.x, z: pos.z - depth / 2, w: width, d: depth });
+
+    // Entrance Canopy
+    const canopyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(10, 0.4, 4), canopyMat);
+    canopy.position.set(pos.x, 3.8, pos.z + 1);
+    this.scene.add(canopy);
+
+    // Glass Double Entrance Doors
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.4,
+      roughness: 0.1
+    });
+    const doors = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.0, 0.15), glassMat);
+    doors.position.set(pos.x, 1.5, pos.z + 0.05);
+    this.scene.add(doors);
+
+    // Directory Plaque on exterior wall (Right of door, target for identify_shell_company)
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.25 });
+    const plaque = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.12), brassMat);
+    plaque.position.set(pos.x + 2.8, 1.8, pos.z + 0.1);
+    this.scene.add(plaque);
+
+    // Corporate Name Neon Sign: "APEX LAND HOLDINGS LLC"
+    const signGeo = new THREE.BoxGeometry(11, 1.0, 0.2);
+    const signMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const sign = new THREE.Mesh(signGeo, signMat);
+    sign.position.set(pos.x, 4.8, pos.z + 0.2);
+    this.scene.add(sign);
+
+    // Entrance illumination
+    const porchLight = new THREE.PointLight(0x38bdf8, 2.2, 14);
+    porchLight.position.set(pos.x, 3.5, pos.z + 1.2);
+    this.scene.add(porchLight);
+
+    // Register POI
+    this.pois.push({
+      id: 'apex_land_holdings',
+      name: 'Apex Land Holdings (Shell Office)',
+      position: this.shellOfficePos.clone(),
+      type: 'office'
+    });
+  }
+
+  private createHarborDepotCache(): void {
+    const pos = this.harborDepotPos;
+
+    // Security Chainlink / Steel Fence Enclosure (approx 6m x 6m around cache)
+    const fenceMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      metalness: 0.85,
+      roughness: 0.35,
+      wireframe: true
+    });
+    const postMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.9,
+      roughness: 0.2
+    });
+
+    // Fence Posts
+    const postGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.5);
+    const postOffsets = [
+      { x: -3, z: -3 },
+      { x: 3, z: -3 },
+      { x: -3, z: 3 },
+      { x: 1, z: 3 } // Leave gap between 1 and 3 for gate entrance
+    ];
+
+    postOffsets.forEach(offset => {
+      const post = new THREE.Mesh(postGeo, postMat);
+      post.position.set(pos.x + offset.x, 1.25, pos.z + offset.z);
+      this.scene.add(post);
+    });
+
+    // Fence Panels (North, West, South partial, East)
+    // North wall (Z = -3)
+    const northFence = new THREE.Mesh(new THREE.BoxGeometry(6, 2.2, 0.1), fenceMat);
+    northFence.position.set(pos.x, 1.1, pos.z - 3);
+    this.scene.add(northFence);
+    this.colliders.push(new THREE.Box3().setFromObject(northFence));
+
+    // West wall (X = -3)
+    const westFence = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.2, 6), fenceMat);
+    westFence.position.set(pos.x - 3, 1.1, pos.z);
+    this.scene.add(westFence);
+    this.colliders.push(new THREE.Box3().setFromObject(westFence));
+
+    // East wall (X = 3)
+    const eastFence = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.2, 6), fenceMat);
+    eastFence.position.set(pos.x + 3, 1.1, pos.z);
+    this.scene.add(eastFence);
+    this.colliders.push(new THREE.Box3().setFromObject(eastFence));
+
+    // South wall (partial: left side from -3 to 0, open from 0 to 3)
+    const southFence = new THREE.Mesh(new THREE.BoxGeometry(3, 2.2, 0.1), fenceMat);
+    southFence.position.set(pos.x - 1.5, 1.1, pos.z + 3);
+    this.scene.add(southFence);
+    this.colliders.push(new THREE.Box3().setFromObject(southFence));
+
+    // Concrete pad foundation
+    const padMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.2, 5.8), padMat);
+    pad.position.set(pos.x, 0.1, pos.z);
+    this.scene.add(pad);
+
+    // Contraband Cache Tactical Locker Mesh
+    const lockerMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.75,
+      roughness: 0.3
+    });
+    const locker = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.85, 1.1), lockerMat);
+    locker.position.set(pos.x, 0.525, pos.z);
+    locker.castShadow = true;
+    locker.receiveShadow = true;
+    this.scene.add(locker);
+
+    // Add locker collider
+    const lockerBox = new THREE.Box3().setFromObject(locker);
+    this.colliders.push(lockerBox);
+
+    // Glowing electronic keypad / indicator
+    const keypadMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+    const keypad = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.05), keypadMat);
+    keypad.position.set(pos.x, 0.7, pos.z + 0.56);
+    this.scene.add(keypad);
+
+    // Keypad indicator light & depot floodlight
+    const cacheLight = new THREE.PointLight(0x06b6d4, 2.2, 8);
+    cacheLight.position.set(pos.x, 1.2, pos.z + 0.6);
+    this.scene.add(cacheLight);
+
+    const depotFloodlight = new THREE.PointLight(0x38bdf8, 1.8, 16);
+    depotFloodlight.position.set(pos.x - 2.8, 2.6, pos.z - 2.8);
+    this.scene.add(depotFloodlight);
+
+    // Register POI
+    this.pois.push({
+      id: 'harbor_depot_cache',
+      name: 'Harbor Depot Cache',
+      position: this.harborDepotPos.clone(),
+      type: 'docks'
+    });
+  }
+
+  private createFinanceOffice(): void {
+    const pos = this.financeOfficePos;
+    const width = 28;
+    const height = 26;
+    const depth = 22;
+
+    // Corporate Headquarters Mesh (Emerald obsidian granite)
+    const officeMat = new THREE.MeshStandardMaterial({
+      color: 0x064e3b,
+      roughness: 0.25,
+      metalness: 0.75
+    });
+    const officeGeo = new THREE.BoxGeometry(width, height, depth);
+    const officeMesh = new THREE.Mesh(officeGeo, officeMat);
+    officeMesh.position.set(pos.x, height / 2, pos.z - depth / 2);
+    officeMesh.castShadow = true;
+    officeMesh.receiveShadow = true;
+    this.scene.add(officeMesh);
+
+    const bbox = new THREE.Box3().setFromObject(officeMesh);
+    this.colliders.push(bbox);
+    this.buildingRects.push({ x: pos.x, z: pos.z - depth / 2, w: width, d: depth });
+
+    // Architectural floor window strips
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x064e3b,
+      emissiveIntensity: 0.6,
+      roughness: 0.1,
+      metalness: 0.9
+    });
+    for (let floor = 1; floor <= 4; floor++) {
+      [-10, -3, 3, 10].forEach(wx => {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(4.8, 2.6, 0.2), windowMat);
+        win.position.set(pos.x + wx, floor * 5.2 + 2, pos.z + 0.12);
+        this.scene.add(win);
+      });
+    }
+
+    // Side Service / Main Infiltration Entrance Canopy
+    const canopyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(12, 0.4, 4), canopyMat);
+    canopy.position.set(pos.x, 3.8, pos.z + 1);
+    this.scene.add(canopy);
+
+    // Glass Double Entrance Doors
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x059669,
+      emissiveIntensity: 0.5,
+      roughness: 0.1
+    });
+    const doors = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.0, 0.15), glassMat);
+    doors.position.set(pos.x, 1.5, pos.z + 0.05);
+    this.scene.add(doors);
+
+    // Emerald Neon Sign: "VESPERA MUNICIPAL TRUST"
+    const signGeo = new THREE.BoxGeometry(14, 1.1, 0.2);
+    const signMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+    const sign = new THREE.Mesh(signGeo, signMat);
+    sign.position.set(pos.x, 4.8, pos.z + 0.2);
+    this.scene.add(sign);
+
+    // Entrance Porch Light (Emerald Neon Glow)
+    const porchLight = new THREE.PointLight(0x10b981, 2.8, 16);
+    porchLight.position.set(pos.x, 3.5, pos.z + 1.5);
+    this.scene.add(porchLight);
+
+    // Archive Filing Cabinets Props at financeArchivePos (-38, 0, -140)
+    const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+    const cabinet = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.8, 1.2), cabinetMat);
+    cabinet.position.set(this.financeArchivePos.x, 1.4, this.financeArchivePos.z);
+    this.scene.add(cabinet);
+
+    // Document Archival Stacks / Boxes
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.7 });
+    const box1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.6), boxMat);
+    box1.position.set(this.financeArchivePos.x + 1.2, 0.25, this.financeArchivePos.z);
+    this.scene.add(box1);
+    const box2 = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.55), boxMat);
+    box2.position.set(this.financeArchivePos.x + 1.2, 0.7, this.financeArchivePos.z);
+    this.scene.add(box2);
+
+    // Executive Terminal Desk Props at financeTerminalPos (-33, 0, -142)
+    const deskMat = new THREE.MeshStandardMaterial({ color: 0x291810, roughness: 0.4 });
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.1, 1.8), deskMat);
+    desk.position.set(this.financeTerminalPos.x, 0.55, this.financeTerminalPos.z);
+    this.scene.add(desk);
+
+    // Glowing Terminal Screen (Emerald Green Glow)
+    const screenMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x10b981,
+      emissiveIntensity: 2.5
+    });
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.55, 0.1), screenMat);
+    screen.position.set(this.financeTerminalPos.x, 1.4, this.financeTerminalPos.z - 0.2);
+    this.scene.add(screen);
+
+    // Workstation ambient spotlight
+    const termLight = new THREE.PointLight(0x10b981, 2.0, 8);
+    termLight.position.set(this.financeTerminalPos.x, 1.8, this.financeTerminalPos.z);
+    this.scene.add(termLight);
+
+    // Register POI
+    this.pois.push({
+      id: 'vespera_municipal_trust',
+      name: 'Vespera Municipal Trust',
+      position: this.financeOfficePos.clone(),
       type: 'office'
     });
   }
