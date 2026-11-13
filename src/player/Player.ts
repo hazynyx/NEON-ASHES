@@ -100,6 +100,14 @@ export class Player {
     this.mesh.position.copy(this.position);
   }
 
+  public teleport(pos: THREE.Vector3, heading: number): void {
+    this.position.copy(pos);
+    this.velocity.set(0, 0, 0);
+    this.heading = heading;
+    this.mesh.position.copy(pos);
+    this.mesh.rotation.y = heading;
+  }
+
   private buildCharacterMesh(): void {
     const skinMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.8 });
     const jacketMat = new THREE.MeshStandardMaterial({ color: 0x3d271d, roughness: 0.7 }); // Kaleb's brown mechanic jacket

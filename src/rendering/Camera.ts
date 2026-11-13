@@ -11,13 +11,13 @@ export class ThirdPersonCamera {
   private normalDistance: number = 4.2;
   private aimDistance: number = 2.2;
   private vehicleDistance: number = 6.8;
-  private interiorDistance: number = 2.0;
+  private interiorDistance: number = 1.85;
   private currentDistance: number = 4.2;
 
   // Offsets
   private playerOffset: THREE.Vector3 = new THREE.Vector3(0, 1.6, 0); // Eye height
   private aimOffset: THREE.Vector3 = new THREE.Vector3(0.55, 1.5, 0); // Shoulder offset
-  private interiorOffset: THREE.Vector3 = new THREE.Vector3(0.35, 1.45, 0); // Indoor over-shoulder
+  private interiorOffset: THREE.Vector3 = new THREE.Vector3(0, 1.45, 0); // Centered indoor eye/chest height
 
   // Smoothing
   private targetPosition: THREE.Vector3 = new THREE.Vector3();
@@ -83,9 +83,14 @@ export class ThirdPersonCamera {
     // Smoothly transition distance
     this.currentDistance += (desiredDist - this.currentDistance) * Math.min(1.0, deltaTime * 8.0);
 
-    // Smooth target tracking
+    // Instant snap if distance jump is large (teleportation, safehouse entry, respawn)
     this.targetPosition.copy(targetPos).add(offset);
-    this.smoothedTarget.lerp(this.targetPosition, Math.min(1.0, deltaTime * 12.0));
+    if (this.smoothedTarget.distanceTo(this.targetPosition) > 5.0) {
+      this.smoothedTarget.copy(this.targetPosition);
+      this.currentDistance = desiredDist;
+    } else {
+      this.smoothedTarget.lerp(this.targetPosition, Math.min(1.0, deltaTime * 12.0));
+    }
 
     // Calculate ideal camera position based on yaw & pitch
     const cosPitch = Math.cos(this.pitch);
@@ -124,6 +129,68 @@ export class ThirdPersonCamera {
     this.camera.position.copy(desiredCamPos);
 
     // Look at smoothed target point
+    this.cameraLookAt.copy(this.smoothedTarget);
+    this.camera.lookAt(this.cameraLookAt);
+  }
+
+  public snap(
+    targetPos: THREE.Vector3,
+    yaw?: number,
+    pitch?: number,
+    worldColliders?: THREE.Box3[]
+  ): void {
+    if (yaw !== undefined) this.yaw = yaw;
+    if (pitch !== undefined) this.pitch = pitch;
+
+    let desiredDist = this.normalDistance;
+    let offset = this.playerOffset;
+    if (this.isAiming) {
+      desiredDist = this.aimDistance;
+      offset = this.aimOffset;
+    } else if (this.isInteriorMode) {
+      desiredDist = this.interiorDistance;
+      offset = this.interiorOffset;
+    } else if (this.isVehicleMode) {
+      desiredDist = this.vehicleDistance;
+    }
+
+    this.currentDistance = desiredDist;
+    this.targetPosition.copy(targetPos).add(offset);
+    this.smoothedTarget.copy(this.targetPosition);
+
+    const cosPitch = Math.cos(this.pitch);
+    const sinPitch = Math.sin(this.pitch);
+    const cosYaw = Math.cos(this.yaw);
+    const sinYaw = Math.sin(this.yaw);
+
+    const camOffset = new THREE.Vector3(
+      sinYaw * cosPitch * this.currentDistance,
+      sinPitch * this.currentDistance,
+      cosYaw * cosPitch * this.currentDistance
+    );
+
+    const desiredCamPos = this.smoothedTarget.clone().add(camOffset);
+
+    if (worldColliders && worldColliders.length > 0) {
+      const ray = new THREE.Ray(this.smoothedTarget, camOffset.clone().normalize());
+      let closestDistance = this.currentDistance;
+
+      for (const box of worldColliders) {
+        const intersection = new THREE.Vector3();
+        if (ray.intersectBox(box, intersection)) {
+          const dist = this.smoothedTarget.distanceTo(intersection);
+          if (dist < closestDistance && dist > 0.6) {
+            closestDistance = Math.max(0.7, dist - 0.25);
+          }
+        }
+      }
+
+      desiredCamPos.copy(this.smoothedTarget).add(
+        camOffset.clone().normalize().multiplyScalar(closestDistance)
+      );
+    }
+
+    this.camera.position.copy(desiredCamPos);
     this.cameraLookAt.copy(this.smoothedTarget);
     this.camera.lookAt(this.cameraLookAt);
   }
