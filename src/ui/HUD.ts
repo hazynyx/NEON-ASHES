@@ -262,7 +262,7 @@ export class HUD {
     if (interactionText) {
       this.interactionPromptEl.classList.remove('hidden');
       this.promptKeyEl.innerText = interactionKey;
-      this.promptLabelEl.innerText = interactionText;
+      this.promptLabelEl.innerHTML = `<span id="prompt-desc">${interactionText}</span>`;
     } else {
       this.interactionPromptEl.classList.add('hidden');
     }
@@ -536,10 +536,10 @@ export class HUD {
 
   // Evidence Modal
   public showEvidence(
-    typeOrCb?: 'photo' | 'manifest' | 'meridian_zoning' | (() => void),
+    typeOrCb?: 'photo' | 'manifest' | 'meridian_zoning' | 'contractor_payoff' | 'black_ledger_wire' | string | (() => void),
     onContinue?: () => void
   ): void {
-    let type: 'photo' | 'manifest' | 'meridian_zoning' = 'photo';
+    let type: string = 'photo';
     let cb = onContinue;
     if (typeof typeOrCb === 'function') {
       cb = typeOrCb;
@@ -548,7 +548,23 @@ export class HUD {
       type = typeOrCb;
     }
 
-    if (type === 'meridian_zoning') {
+    if (type === 'black_ledger_wire') {
+      this.evidenceTitleEl.innerText = 'EVIDENCE COLLECTED: BLACK LEDGER WIRE TRANSFERS';
+      this.evidenceCaptionEl.innerHTML = `
+        <strong>Target:</strong> Vespera Municipal Trust Executive Terminal &bull; <strong>Total Traced:</strong> $4,200,000<br>
+        <em>Encrypted wire transfer ledger tying municipal development accounts directly to offshore shell companies controlled by Councilman Vance Albright, Meridian Properties, and Vincent Drake's Marrow Syndicate.</em>
+      `;
+      this.renderBlackLedgerWireModal();
+      this.continueMissionBtn.innerText = 'SECURE LEDGER & EVACUATE OFFICE';
+    } else if (type === 'contractor_payoff') {
+      this.evidenceTitleEl.innerText = 'EVIDENCE COLLECTED: REDEVELOPMENT BRIBE HANDOFF';
+      this.evidenceCaptionEl.innerHTML = `
+        <strong>Target:</strong> Dominic Alvarez &amp; Marrow Syndicate Operative &bull; <strong>Location:</strong> Eastline Construction Alley<br>
+        <em>Dominic Alvarez receiving a heavy manila envelope from a Marrow Syndicate enforcer in front of a black utility truck. The document stamped on the envelope reads: 'APEX LAND HOLDINGS // EXPEDITE REMOVAL'.</em>
+      `;
+      this.renderContractorPayoffEvidence();
+      this.continueMissionBtn.innerText = 'TAKE SURVEILLANCE PHOTO & CONTINUE';
+    } else if (type === 'meridian_zoning') {
       this.evidenceTitleEl.innerText = 'EVIDENCE COLLECTED: MERIDIAN ZONING BUYOUT AGREEMENT';
       this.evidenceCaptionEl.innerHTML = `
         <strong>Document:</strong> Meridian Properties Redevelopment Acquisition Contract &bull; <strong>Signatory:</strong> Councilman Vance Albright<br>
@@ -712,6 +728,241 @@ export class HUD {
     ctx.font = 'bold 7.5px monospace';
     ctx.fillText('SEAL OF', 28, 202);
     ctx.fillText('VESPERA', 27, 212);
+  }
+
+  private renderContractorPayoffEvidence(): void {
+    const ctx = this.photoCanvas.getContext('2d');
+    if (!ctx) return;
+    const w = this.photoCanvas.width;
+    const h = this.photoCanvas.height;
+
+    // Dark night sky & ambient industrial noir alley
+    ctx.fillStyle = '#0a0f1d';
+    ctx.fillRect(0, 0, w, h);
+
+    // Weathered brick warehouse silhouettes in background
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(10, 30, 110, 150);
+    ctx.fillRect(130, 15, 140, 165);
+    ctx.fillRect(280, 45, 110, 135);
+
+    // Construction scaffolding lines
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(15, 40); ctx.lineTo(115, 170);
+    ctx.moveTo(115, 40); ctx.lineTo(15, 170);
+    ctx.moveTo(15, 100); ctx.lineTo(115, 100);
+    ctx.stroke();
+
+    // Alley ground / asphalt
+    ctx.fillStyle = '#181e26';
+    ctx.fillRect(0, h * 0.68, w, h * 0.32);
+
+    // Black utility truck silhouette in alley background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(40, 110, 120, 50);
+    ctx.fillRect(100, 85, 55, 30);
+    ctx.fillStyle = '#020617';
+    ctx.beginPath();
+    ctx.arc(65, 162, 14, 0, Math.PI * 2);
+    ctx.arc(135, 162, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Alvarez (left silhouette) with construction hardhat & work vest
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(190, 115, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(180, 115, 20, 4);
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.arc(190, 120, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ea580c';
+    ctx.fillRect(182, 128, 16, 32);
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(182, 138, 16, 4);
+    ctx.fillRect(182, 148, 16, 4);
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(183, 160, 6, 28);
+    ctx.fillRect(191, 160, 6, 28);
+
+    // Syndicate Operative (right silhouette) with dark overcoat & sunglasses
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(245, 114, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(237, 122, 18, 42);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(239, 164, 6, 24);
+    ctx.fillRect(247, 164, 6, 24);
+
+    // Manila envelope handoff between the two figures
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(206, 134, 24, 15);
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(206, 134, 24, 15);
+
+    // Red Confidential Stamp overlay on envelope in closeup corner
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fillRect(14, 175, 250, 75);
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(14, 175, 250, 75);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('APEX LAND HOLDINGS // EXPEDITE REMOVAL', 22, 194);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '9px monospace';
+    ctx.fillText('PROJECT: EASTLINE REDEVELOPMENT PHASE II', 22, 210);
+    ctx.fillText('RECIPIENT: D. ALVAREZ (HAZARD CONTRACTING)', 22, 224);
+    ctx.fillStyle = '#22c55e';
+    ctx.fillText('DISBURSEMENT: $50,000 [CASH SETTLEMENT]', 22, 238);
+
+    // Camera viewfinder telephoto reticle overlay
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 1.5;
+    const bLen = 18;
+    ctx.beginPath(); ctx.moveTo(25, 25 + bLen); ctx.lineTo(25, 25); ctx.lineTo(25 + bLen, 25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w - 25 - bLen, 25); ctx.lineTo(w - 25, 25); ctx.lineTo(w - 25, 25 + bLen); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(25, h - 25 - bLen); ctx.lineTo(25, h - 25); ctx.lineTo(25 + bLen, h - 25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w - 25 - bLen, h - 25); ctx.lineTo(w - 25, h - 25); ctx.lineTo(w - 25, h - 25 - bLen); ctx.stroke();
+
+    // Center crosshairs
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 12, h / 2); ctx.lineTo(w / 2 + 12, h / 2);
+    ctx.moveTo(w / 2, h / 2 - 12); ctx.lineTo(w / 2, h / 2 + 12);
+    ctx.stroke();
+
+    // Camera Telephoto HUD info
+    ctx.fillStyle = '#22c55e';
+    ctx.font = '10px monospace';
+    ctx.fillText('● REC [SURV-CAM 400mm]', 32, 40);
+    ctx.fillText('ISO 3200  f/2.8  1/125s', w - 165, 40);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText('GPS: 45.2°N, 100.8°W // 01:18 AM', w - 215, h - 14);
+  }
+
+  private renderBlackLedgerWireModal(): void {
+    const ctx = this.photoCanvas.getContext('2d');
+    if (!ctx) return;
+    const w = this.photoCanvas.width;
+    const h = this.photoCanvas.height;
+
+    // Dark charcoal obsidian background
+    ctx.fillStyle = '#070b14';
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle CRT scanlines
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.04)';
+    for (let y = 0; y < h; y += 4) {
+      ctx.fillRect(0, y, w, 2);
+    }
+
+    // Outer double emerald security border
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(8, 8, w - 16, h - 16);
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(12, 12, w - 24, h - 24);
+
+    // Top Header Bar
+    ctx.fillStyle = '#064e3b';
+    ctx.fillRect(14, 14, w - 28, 28);
+
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('VESPERA MUNICIPAL TRUST // EXECUTIVE ARCHIVE', 22, 32);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '8.5px monospace';
+    ctx.fillText('TERM: VMT-EXEC-014 | ROUTE: SWIFT-OFFSHORE (CAYMAN / LIECHTENSTEIN)', 22, 54);
+
+    // Wire Transfer Table Header
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(18, 64, w - 36, 18);
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 8.5px monospace';
+    ctx.fillText('DATE', 24, 76);
+    ctx.fillText('BENEFICIARY', 90, 76);
+    ctx.fillText('ACCT NUMBER', 240, 76);
+    ctx.fillText('AMOUNT (USD)', 320, 76);
+
+    // Dividing rule
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(18, 83);
+    ctx.lineTo(w - 18, 83);
+    ctx.stroke();
+
+    // Data Rows
+    const rows = [
+      { date: '2026-08-14', entity: 'APEX LAND HOLDINGS LLC', acct: '#883-9102-CY', amount: '$1,250,000', color: '#38bdf8' },
+      { date: '2026-08-28', entity: 'MERIDIAN PROPERTIES CORP', acct: '#402-1823-SW', amount: '$1,500,000', color: '#cbd5e1' },
+      { date: '2026-09-02', entity: 'V. ALBRIGHT BLIND TRUST', acct: '#091-7741-LI', amount: '$850,000', color: '#f59e0b' },
+      { date: '2026-09-10', entity: 'MARROW SYNDICATE SPEC', acct: '#662-3904-PA', amount: '$600,000', color: '#f87171' }
+    ];
+
+    rows.forEach((r, idx) => {
+      const y = 98 + idx * 20;
+      if (idx % 2 === 0) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+        ctx.fillRect(18, y - 11, w - 36, 18);
+      }
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '8.5px monospace';
+      ctx.fillText(r.date, 24, y);
+
+      ctx.fillStyle = r.color;
+      ctx.font = 'bold 8.5px monospace';
+      ctx.fillText(r.entity, 90, y);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '8.5px monospace';
+      ctx.fillText(r.acct, 240, y);
+
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 9px monospace';
+      ctx.fillText(r.amount, 320, y);
+    });
+
+    // Summary Box
+    ctx.fillStyle = 'rgba(6, 78, 59, 0.5)';
+    ctx.fillRect(18, 180, w - 36, 32);
+    ctx.strokeStyle = '#059669';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(18, 180, w - 36, 32);
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('TOTAL DISBURSED: $4,200,000 [FLAGGED: ILLICIT EMBEZZLEMENT]', 26, 195);
+    ctx.fillStyle = '#34d399';
+    ctx.font = '8px monospace';
+    ctx.fillText('DIRECT TRANSFERS AUTHORIZED VIA MUNICIPAL INFRASTRUCTURE BOND FUND', 26, 206);
+
+    // Subpoena Evidence / Confidential Stamped Badge
+    ctx.save();
+    ctx.translate(285, 222);
+    ctx.rotate(-0.06);
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-6, -10, 100, 20);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText('CONFIDENTIAL // SUBPOENA', -2, 3);
+    ctx.restore();
+
+    // Export complete status
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 8.5px monospace';
+    ctx.fillText('[EXPORT COMPLETE // 256-BIT AES ENCRYPTED]', 24, 234);
   }
 
   public hideEvidence(): void {

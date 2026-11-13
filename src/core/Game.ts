@@ -514,12 +514,20 @@ export class Game {
       return { text: `Enter ${this.vehicleMgr.nearbyVehicle.config.name}`, key: 'E' };
     }
 
+    const currentObj = this.missionMgr.getCurrentObjective();
+
+    // Mission M08 meet_mara prompt
+    if (currentObj && currentObj.id === 'meet_mara') {
+      const dist = this.player.position.distanceTo(this.world.southsideDinerPos);
+      if (dist < 5.0) {
+        return { text: "Speak with Mara Vale", key: 'F' };
+      }
+    }
+
     // NPC conversation
     if (this.npcMgr.nearbyNPC && this.npcMgr.nearbyNPC.data.isStoryNPC) {
       return { text: `Talk to ${this.npcMgr.nearbyNPC.data.name}`, key: 'F' };
     }
-
-    const currentObj = this.missionMgr.getCurrentObjective();
 
     // Inside Lena's Apartment (Unit 102)
     if (this.isInApartmentInterior) {

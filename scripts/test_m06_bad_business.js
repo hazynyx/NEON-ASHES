@@ -306,11 +306,20 @@ async function run() {
 
   let s4State = await page.evaluate(() => {
     const curObj = window.game.missionMgr.getCurrentObjective();
+    const playerPos = window.game.player.position;
+    const targetPos = curObj?.targetPosition;
+    const dist = targetPos ? playerPos.distanceTo(targetPos) : -1;
+    const isMissionActive = window.game.missionMgr.isMissionActive;
     return {
       objIndex: window.game.missionMgr.currentObjectiveIndex,
-      objId: curObj?.id
+      objId: curObj?.id,
+      playerPos: { x: playerPos.x, y: playerPos.y, z: playerPos.z },
+      targetPos: targetPos ? { x: targetPos.x, y: targetPos.y, z: targetPos.z } : null,
+      dist,
+      isMissionActive
     };
   });
+  console.log('s4State debug:', s4State);
 
   assert(s4State.objIndex === 4, `Objective advanced to stage 4 (got index ${s4State.objIndex})`);
   assert(s4State.objId === 'identify_shell_company', `Objective is identify_shell_company (got ${s4State.objId})`);
