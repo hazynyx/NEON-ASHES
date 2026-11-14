@@ -13,6 +13,10 @@ export class AudioManager {
   private sirenGain: GainNode | null = null;
   private isSirenActive: boolean = false;
 
+  // Throttle rapidly retriggered looping SFX (handbrake screech is requested
+  // every frame while the key is held).
+  private lastTireScreechTime: number = 0;
+
   constructor() {
     // Lazy initialize on first user interaction
   }
@@ -262,6 +266,11 @@ export class AudioManager {
     if (!this.ensureContext() || this.isMuted) return;
     const ctx = this.ctx!;
     const now = ctx.currentTime;
+
+    // Avoid stacking dozens of overlapping noise nodes during a handbrake
+    // turn; one screech every 250ms is plenty.
+    if (now - this.lastTireScreechTime < 0.25) return;
+    this.lastTireScreechTime = now;
 
     const bufferSize = ctx.sampleRate * 0.2;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);

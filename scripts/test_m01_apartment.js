@@ -24,7 +24,7 @@ async function run() {
   page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
 
   console.log('Navigating to http://localhost:3000/...');
-  await page.goto('http://localhost:3000/', { waitUntil: 'networkidle0' });
+  await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded' });
 
   console.log('Waiting for start menu button...');
   await page.waitForSelector('#start-game-btn', { timeout: 10000 });

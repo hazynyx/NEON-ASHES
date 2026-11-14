@@ -178,7 +178,8 @@ export class VehicleManager {
     deltaTime: number,
     player: Player,
     input: InputManager,
-    worldColliders: THREE.Box3[]
+    worldColliders: THREE.Box3[],
+    blockEnterVehicle: boolean = false
   ): void {
     // 1. Update Traffic AI for ambient vehicles
     this.updateTrafficAI(deltaTime, player);
@@ -197,13 +198,15 @@ export class VehicleManager {
       }
 
       // Enter vehicle interaction prompt [E]
-      if (this.nearbyVehicle && input.isKeyPressed('KeyE')) {
+      if (this.nearbyVehicle && input.isKeyPressed('KeyE') && !blockEnterVehicle) {
+        input.consumeKey('KeyE');
         this.enterVehicle(player, this.nearbyVehicle);
       }
     } else {
       // Player is currently driving active vehicle
       // Exit vehicle interaction [E]
       if (input.isKeyPressed('KeyE')) {
+        input.consumeKey('KeyE');
         this.exitVehicle(player, this.activeVehicle);
       }
     }

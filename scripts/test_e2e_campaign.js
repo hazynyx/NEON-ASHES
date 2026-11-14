@@ -350,7 +350,7 @@ async function runCampaignE2E() {
     console.log('\n  [Milestone 2] M05 Southside Diner: Mara talk, Meridian infiltration, zoning buyout photo');
     await page.evaluate(() => {
       window.game.debugMenu.warpToMission('M05', 0); // goto_diner
-      window.game.player.teleport(new window.THREE.Vector3(48, 0, 47), 0);
+      window.game.player.teleport(new window.THREE.Vector3(48, 0, 35), 0);
     });
     await new Promise(r => setTimeout(r, 500));
 
@@ -588,7 +588,7 @@ async function runCampaignE2E() {
     // Stage 0: Meet Mara at diner patio
     await page.evaluate(() => {
       window.game.debugMenu.warpToMission('M08', 0); // meet_mara
-      window.game.player.teleport(new window.THREE.Vector3(48, 0, 47), 0);
+      window.game.player.teleport(new window.THREE.Vector3(48, 0, 35), 0);
     });
     await new Promise(r => setTimeout(r, 400));
     await page.keyboard.press('KeyF');

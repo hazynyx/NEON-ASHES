@@ -280,7 +280,8 @@ export class NPCManager {
 
     // Listen for gunfire to scare pedestrians
     this.eventBus.on('player:weaponFire', (data) => {
-      this.handleGunfireScare();
+      const source = data?.position;
+      this.handleGunfireScare(source instanceof THREE.Vector3 ? source : null);
     });
   }
 
@@ -346,7 +347,7 @@ export class NPCManager {
       id: 'mara_vale',
       name: 'Mara Vale',
       isStoryNPC: true,
-      position: new THREE.Vector3(48, 0, 46), // On Southside Diner patio under awning
+      position: new THREE.Vector3(50, 0, 34.8), // On Southside Diner patio under awning
       heading: -Math.PI / 3,
       dialogue: [
         {
@@ -417,10 +418,10 @@ export class NPCManager {
     }
   }
 
-  private handleGunfireScare(): void {
+  private handleGunfireScare(source: THREE.Vector3 | null): void {
     this.npcs.forEach(npc => {
       if (!npc.data.isStoryNPC) {
-        npc.scare(new THREE.Vector3(0, 0, 0));
+        npc.scare(source || npc.position.clone().add(new THREE.Vector3(0, 0, 1)));
       }
     });
   }

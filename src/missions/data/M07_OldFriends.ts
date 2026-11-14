@@ -9,7 +9,7 @@ export function createMission07Data(
   return {
     id: 'M07',
     title: 'OLD FRIENDS',
-    category: 'ACT I // M07',
+    category: 'ACT II // M07',
     rewards: {
       cash: 2500,
       description: '+$2,500 Cash, Shotgun Ammo, Drake/Syndicate World State'

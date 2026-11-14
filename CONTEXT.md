@@ -11,10 +11,11 @@
 ---
 
 ## 2. CURRENT DEVELOPMENT STATUS
-- **Overall Completion:** 78% (Phase 0 Foundation, Phase 1 Prototype, Act I Missions M01-M04, Act II Missions M05, M06, M07, and M08 Complete!)
+- **Overall Completion:** 80% (Phase 0 Foundation, Phase 1 Prototype, Act I Missions M01-M04, Act II Missions M05, M06, M07, and M08 Complete; code-quality / playability hardening pass done)
 - **Current Milestone:** Phase 3 / Act II: The Money Trail & Act III Setup (M01-M08 fully playable and chained).
 - **Current Focus:** Police Cruiser patrol/pursuit AI (`src/police/PoliceAI.ts`) and Act III climax planning.
 - **Last Completed:**
+  - **Code-Quality & Playability Hardening (2026-11-14):** Fixed modal/gameplay overlap, stale HUD listeners, save/load mission restoration, debug-menu stage mismatches, mission-chain timer races, interaction priority, aiming/map heading conventions, and made the M05 Meridian office, M08 Municipal Trust office, and Mara Vale's diner patio physically reachable. See Session 10 below.
   - **Mission Failure on Player Death System (`src/missions/MissionManager.ts`, `src/core/Game.ts`, `src/ui/HUD.ts`):**
     - Immediate mission termination upon player death (HP = 0) with `isMissionActive = false` and `lastFailedMission = { id, stageIndex }`.
     - Hostile combatant purge via `enemyMgr.clear()`.
@@ -29,7 +30,7 @@
     - **M07 ("Old Friends"):** Jonah's debt resolution with 3-way branching choice encounter (A: $2,000 cash debt payoff; B: syndicate ambush combat shootout; C: Vincent Drake harbor contraband cache retrieval).
     - **M08 ("Paper Trail"):** Vespera Municipal Trust night infiltration, filing archive inspection, executive terminal 256-bit AES $4.2M wire transfer ledger modal, high-alert perimeter evasion.
     - **E2E Campaign Test Suite (`scripts/test_e2e_campaign.js`):** 90/90 assertions passed (100% pass rate).
-- **Currently Broken:** None. All 8 missions and debug/failure systems verified in automated browser playtest.
+- **Currently Broken:** None. All 8 missions and debug/failure systems verified in automated browser playtest (90/90 campaign assertions, 33/33 M08, 35/35 M06, M01/M02/death suites). Mission-blocking geometry issues in M05/M08 were fixed in Session 10.
 - **Next Tasks:**
   1. Implement Police Pursuit AI (`src/police/PoliceAI.ts`):
      - Police cruisers actively pursuing Kaleb upon reaching 2+ wanted stars with siren audio and roadblock tactics.
@@ -109,16 +110,28 @@
   - Photograph confidential municipal buyout accord linking Albright to Syndicate [COMPLETE]
   - Return to Southside Diner and debrief Mara Vale [COMPLETE]
   - Complete mission & receive $1,800 + Decrypted Audio Journal Tape [COMPLETE]
-- **M06 — The City Hall Connection:** [NOT STARTED] — Next target.
-- **M07–M30:** [NOT STARTED]
+- **M06 — Bad Business:** [COMPLETE]
+  - Tail contractor Dominic Alvarez through the Eastline redevelopment site [COMPLETE]
+  - Photograph the Marrow Syndicate payoff and identify Apex Land Holdings [COMPLETE]
+  - Evade surveillance and expose the shell company [COMPLETE]
+  - Complete mission & receive $2,000 + Apex lead [COMPLETE]
+- **M07 — Old Friends:** [COMPLETE]
+  - Drive to Adrian's garage and talk to Jonah Reyes [COMPLETE]
+  - Resolve the $2,000 debt via 3-way branch: cash payoff, shootout, or Drake contraband job [COMPLETE]
+  - Debrief Jonah and complete mission & receive $2,500 + world-state flags [COMPLETE]
+- **M08 — Paper Trail:** [COMPLETE]
+  - Meet Mara Vale at the Southside Diner patio [COMPLETE]
+  - Infiltrate Vespera Municipal Trust, search the archive, and download the Black Ledger wire transfers [COMPLETE]
+  - Evade Vespera Security and complete mission & receive $3,000 + Act II finale fanfare [COMPLETE]
+- **M09–M30:** [NOT STARTED]
 
 ---
 
 ## 5. WORLD IMPLEMENTATION STATUS
 - **Vespera City Districts:**
-  - **Eastline / Southside (District 1):** [COMPLETE] Contains Lena's apartment building (128 Eastline), Adrian's old auto repair garage, Southside Diner (24h retro diner with neon and patio), multi-lane avenue network, sidewalks, streetlights, and traffic.
+  - **Eastline / Southside (District 1):** [COMPLETE] Contains Lena's apartment building (128 Eastline), Adrian's old auto repair garage, Southside Diner (24h retro diner with neon and a walkable patio where Mara Vale stands), multi-lane avenue network, sidewalks, streetlights, and traffic.
   - **Old Harbor (District 2):** [COMPLETE] Waterfront gantry crane, shipping container stacks, Pier 19 Warehouse 19 with interior and roll-up shutter.
-  - **Central Vesper Corridor:** [IN PROGRESS] Meridian Properties corporate headquarters tower, canopy, archival desk, and terminals.
+  - **Central Vesper Corridor:** [COMPLETE] Meridian Properties corporate tower with a hollow, walkable ground-floor archive lobby; Vespera Municipal Trust with a hollow ground-floor archive/terminal suite; Apex Land Holdings shell office.
   - **Redwater / North Heights / Silver Coast:** [NOT STARTED]
 
 ---
@@ -134,16 +147,21 @@
 - `src/rendering/Camera.ts` — Third-person follow camera with aiming zoom and vehicle chase mode
 - `src/rendering/Lighting.ts` — Directional sun/moon with day/night cycle and shadow mapping
 - `src/world/World.ts` — City block builder, road network, colliders, and POI markers
+- `src/world/ApartmentInterior.ts` — Detached Unit 102 interior cell, props, colliders, and radar floorplan
+- `src/world/DestinationMarker.ts` — Floating amber objective pillar, ring, and chevron
 - `src/player/Player.ts` — Kaleb Voss character controller, kinematics, and raycast combat
 - `src/vehicles/Vehicle.ts` — Arcade vehicle physics, suspension, steering, and wheel animation
 - `src/vehicles/VehicleManager.ts` — Spawning, proximity interaction, and enter/exit logic
-- `src/ai/NPCManager.ts` — Story NPCs (Mrs. Gable, Jonah Reyes) and reactive pedestrians
+- `src/ai/NPCManager.ts` — Story NPCs (Mrs. Gable, Jonah Reyes, Mara Vale) and reactive pedestrians
 - `src/ai/EnemyAI.ts` — Marrow Syndicate enemy AI with combat state machine and health
 - `src/missions/MissionManager.ts` — Active mission state runner and objective coordinator
 - `src/missions/data/M01_HomeAgain.ts` — Objective declarations for Mission M01
 - `src/missions/data/M02_OldDebts.ts` — Objective declarations for Mission M02
 - `src/ui/HUD.ts` — Minimap radar, vitals, speedometer, dialogue overlay, evidence modal
+- `src/ui/DebugMenu.ts` — Developer console (mission warp, fast travel, cheats, spawner)
+- `src/ui/PauseMenu.ts` — System hub, tactical map, settings, save/load, mission log
 - `src/audio/AudioManager.ts` — Procedural Web Audio API sound synthesizer
+- `src/audio/NarrationManager.ts` — Web Speech narration queue with stale-callback guards
 - `src/style.css` — Authoritative UI stylesheet strictly avoiding glassmorphism
 
 ---
@@ -293,7 +311,7 @@
     - **Advance +1 Objective** & **Instant Pass Mission** for rapid testing workflows.
     - Real-time active mission readout card with live cash and health.
   - **Fast Travel Tab:**
-    - 11 direct instant teleport buttons to all key city landmarks and interiors:
+    - 15 direct instant teleport buttons to all key city landmarks and interiors:
       - Lena's Apartment (Outside & Inside Unit 102)
       - Adrian's Auto Repair (Forecourt & Inside Workshop)
       - Southside Diner (Patio)
@@ -324,10 +342,62 @@
     - Verified all 6 automated tests: opening menu, fast travel grid, player cheats (+cash, god mode, weapons), world spawner, warping into M03 at Pier 19, and warping into M05 at Southside Diner.
     - Screenshots captured: `debug_menu_missions_tab.png`, `debug_menu_fast_travel_tab.png`, `debug_menu_player_cheats_tab.png`, `debug_menu_world_spawner_tab.png`, `debug_warp_m03_pier19.png`, `debug_warp_m05_diner.png`.
 
+### 2026-11-14 (Session 10) — Code-Quality & Playability Hardening
+- **Update-loop / modal correctness (`src/core/Game.ts`):**
+  - Added a title-screen simulation gate so M01 can no longer auto-complete its first objective before the player presses **ENTER VESPERA CITY**.
+  - Evidence modal, WASTED screen, and Mission Passed/Failed banner now freeze gameplay entirely; previously WASD still moved Kaleb, clicks on modal buttons could fire the pistol, and mission handlers kept running behind the UI.
+  - Removed the duplicate F1 `keydown` listener that toggled the standalone controls overlay at the same time as the Pause Menu controls tab.
+  - Camera view cycling (`V`) is now processed only during active gameplay (not while paused/dialogue/overlays).
+  - Pause menu resume restores `MISSION_ACTIVE` when a mission is active instead of always forcing `FREE_ROAM`; the HUD `MENU [ESC]` button now also pauses the simulation.
+  - Added `createMissionDataById()` and `restoreFromSave()` so loading a slot re-creates the saved mission data, objective index, apartment-interior mode, vehicle state, and camera. Old/invalid mission ids fall back to free roam.
+  - Chained campaign transitions now run through `scheduleMissionChain()`, which aborts if a debug warp/save load/restart started another mission during the 800ms banner delay. This fixes M07 branch tests being reset by the previous M06 chain timer.
+- **Player / combat fixes (`src/player/Player.ts`):**
+  - `hasShotgun` now starts `false` (the 12G is still unlocked by M02's safe, the debug weapons cheat, or a loaded save that completed M02).
+  - Shooting now requires pointer lock, preventing UI clicks from firing rounds.
+  - Raycasts exclude Kaleb's entire mesh hierarchy (head, torso, arms, held weapons), so shots no longer stop on his own model.
+  - Aiming body heading now uses `camera.yaw + PI` (the player model faces +Z while the camera looks down -Z), so Kaleb faces the direction he is shooting.
+  - `teleport()` clears ragdoll/aim limb poses; `resetCombatState()` is used by respawn and save loading.
+- **HUD / UI lifecycle fixes (`src/ui/HUD.ts`, `src/ui/PauseMenu.ts`):**
+  - Evidence modal callbacks are stored and removed on every close, preventing a dismissed modal's stale continue handler from double-advancing a later mission.
+  - Mission Passed/Failed retry/continue handlers are cleaned up before each new banner, preventing duplicate retry/abandon callbacks after repeated deaths.
+  - WASTED and notification timers are cleared correctly; debug notifications auto-hide after 2.8s.
+  - World map now uses live `World` coordinates for landmarks, matches the real avenue/cross-street grid, reports the correct district, and uses convention-aware GPS arrow/heading math for on-foot vs vehicle.
+  - Minimap radar rotation now matches the actual on-foot/vehicle heading conventions.
+  - Mission log clears stale entries when no mission is active.
+  - Save/load button now passes slot data to `Game.restoreFromSave()`.
+- **Save system (`src/core/SaveSystem.ts`):**
+  - Bumped schema to v2 while remaining backward-compatible; saves heading, shotgun ownership/ammo, and current weapon.
+  - Completed/failed missions are no longer written as `currentMissionId`; autosave after a mission pass loads into free roam instead of resurrecting a finished mission at an out-of-range objective index.
+  - Loading revives the player, clears vehicle/dead state, and clamps health.
+- **Debug menu (`src/ui/DebugMenu.ts`):**
+  - Vehicle spawner now spawns 4.5m **in front** of the player (was spawning behind).
+  - M03, M04, and M05 stage lists now align one-to-one with their real objective arrays (added `observe_handoff`, `retrieve_key`, `unlock_gate`, `return_to_mara`, `debrief_mara`, etc.); fixed M04/M05 label/index drift.
+  - Warp/teleport clears the Mission Passed/Failed banner, evidence modal, WASTED overlay, and revives a dead player so the new mission is never frozen by leftover UI.
+  - Fast-travel diner/Meridian positions updated to the walkable patio/entrance.
+- **World / mission reachability (`src/world/World.ts`, `src/ai/NPCManager.ts`):**
+  - `southsideDinerPos` is now the walkable patio at `(50, 0, 34.8)`; the diner building itself stays at `(50, 0, 46)`. Mara Vale stands at the patio, so M05/M08 diner objectives are reachable without teleporting inside a solid wall.
+  - Meridian Properties tower and Vespera Municipal Trust are no longer single solid boxes: both have hollow, lit ground-floor lobbies with split front walls and real 6.4m/5.6m entrance openings. The M05 archive desk and M08 filing cabinets/executive terminal can now be reached by walking in normally.
+  - Both offices gained interior floors, low ceilings, wall colliders, and interior lights.
+- **Audio / NPC / interaction fixes:**
+  - `NarrationManager` uses speech/queue generation tokens so cancelled utterances can no longer hide a newer subtitle; queue replacement cancels stale callbacks.
+  - `AudioManager.playTireScreech()` is throttled to 0.25s, preventing dozens of overlapping noise nodes during a held handbrake turn.
+  - NPC gunfire panic now flees away from the actual shooter position instead of world origin.
+  - Vehicle enter/exit consumes `[E]`, and mission/NPC/interior interactions take priority over a nearby parked car, eliminating same-frame double triggers.
+  - M06/M07 mission categories corrected to `ACT II`.
+- **Regression tests updated/verified:**
+  - Updated diner teleport coordinates in `scripts/test_e2e_campaign.js` and `scripts/test_m08_paper_trail.js` for the new patio position.
+  - Changed `scripts/test_m01_apartment.js` navigation wait from `networkidle0` to `domcontentloaded` (Vite HMR kept the network from going idle).
+  - Verified: `test_e2e_campaign.js` **90/90**, `test_m08_paper_trail.js` **33/33**, `test_m06_bad_business.js` **35/35**, `test_m01_apartment.js`, `test_m02_garage.js`, `test_death_and_debug_menu.js`, `test_debug_menu.js`, and `test_camera_views.js` all pass.
+  - `npm run build` passes clean (`dist/assets/index-hP-yIsgW.js`, 892.64 kB / 229.99 kB gzip).
+  - Additional save/load + walkability verification: mission restored to M05 stage 3 with cash/objective intact, apartment save restored interior mode, and the player successfully walked through both new office entrances.
+
 ---
 
 ## 8. ACTIVE HANDOFF NOTES
 - **Developer Debug Menu & Mission Warp System Complete:**
-  - Both developer and user can now press `F2` or click `DEV [F2]` on the HUD at any time to freely warp to any mission (M01–M05), jump directly to specific stages, fast-travel across Vespera City, toggle god mode, give weapons/cash, spawn vehicles, or change time of day without needing to play sequentially.
+  - Press `F2` (or click `DEV [F2]`) at any time to warp to any mission (M01–M08), jump directly to specific stages, fast-travel across Vespera City, toggle god mode, give weapons/cash, spawn vehicles, or change time of day without needing to play sequentially.
+  - Debug warps now clean up open result/evidence/WASTED overlays and revive the player, so warping cannot leave the simulation frozen.
+- **Save/Load Is Mission-Aware:**
+  - Loading restores the active mission's real objective array, interior mode, heading, weapons, time of day, and camera instead of applying a saved index to an unrelated stale mission.
 - **Next Task:**
-  - Polish Mission M03 ("The Harbor") and M04 ("Cold Storage"), or proceed to Act II Mission M06 ("The City Hall Connection").
+  - Implement Police Pursuit AI (`src/police/PoliceAI.ts`) with 2+ star pursuit behavior, siren audio, and roadblocks; then Act III Missions M09–M10.

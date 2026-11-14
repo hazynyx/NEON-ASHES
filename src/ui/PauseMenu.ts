@@ -5,9 +5,10 @@ import { EngineRenderer } from '../rendering/Renderer.ts';
 import { ThirdPersonCamera } from '../rendering/Camera.ts';
 import { AudioManager } from '../audio/AudioManager.ts';
 import { NarrationManager } from '../audio/NarrationManager.ts';
-import { SaveSystem } from '../core/SaveSystem.ts';
+import { SaveSystem, SaveSlotData } from '../core/SaveSystem.ts';
 import { CityLighting } from '../rendering/Lighting.ts';
 import { Vehicle } from '../vehicles/Vehicle.ts';
+import { World } from '../world/World.ts';
 
 export class PauseMenu {
   private overlayEl: HTMLElement;
@@ -22,9 +23,11 @@ export class PauseMenu {
   private audio: AudioManager;
   private narration: NarrationManager;
   private lighting: CityLighting;
+  private world: World;
   private getVehicle: () => Vehicle | null;
   private getFog: () => THREE.FogExp2 | null;
   private onResumeCallback: () => void;
+  private onLoadCallback?: (data: SaveSlotData) => void;
 
   // DOM tab buttons and containers
   private tabButtons: NodeListOf<HTMLButtonElement>;
@@ -50,9 +53,11 @@ export class PauseMenu {
     audio: AudioManager,
     narration: NarrationManager,
     lighting: CityLighting,
+    world: World,
     getVehicle: () => Vehicle | null,
     getFog: () => THREE.FogExp2 | null,
-    onResume: () => void
+    onResume: () => void,
+    onLoad?: (data: SaveSlotData) => void
   ) {
     this.player = player;
     this.missionMgr = missionMgr;
@@ -61,9 +66,11 @@ export class PauseMenu {
     this.audio = audio;
     this.narration = narration;
     this.lighting = lighting;
+    this.world = world;
     this.getVehicle = getVehicle;
     this.getFog = getFog;
     this.onResumeCallback = onResume;
+    this.onLoadCallback = onLoad;
 
     this.overlayEl = document.getElementById('pause-menu')!;
     this.tabButtons = document.querySelectorAll('.pause-tab');
@@ -192,7 +199,9 @@ export class PauseMenu {
       const loadBtn = document.getElementById(`load-btn-${slotId}`);
       if (loadBtn) {
         loadBtn.addEventListener('click', () => {
-          if (SaveSystem.loadGame(this.player, this.missionMgr, this.lighting, slotId)) {
+          const slotData = SaveSystem.getSlotData(slotId);
+          if (slotData && SaveSystem.loadGame(this.player, this.missionMgr, this.lighting, slotId)) {
+            this.onLoadCallback?.(slotData);
             this.close();
           }
         });
@@ -289,9 +298,9 @@ export class PauseMenu {
       y: originY + wz * scale
     });
 
-    // Ocean / Harbor waterline (left side X < -70)
+    // Ocean / Harbor waterline (west of the coastal avenue grid)
     ctx.fillStyle = '#0d1824';
-    const waterBound = toMap(-75, 0).x;
+    const waterBound = toMap(-115, 0).x;
     ctx.fillRect(0, 0, waterBound, h);
 
     ctx.strokeStyle = '#224466';
@@ -305,19 +314,19 @@ export class PauseMenu {
     ctx.font = '600 12px "Chakra Petch", sans-serif';
     ctx.fillText('VESPERA SOUND // HARBOR WATERWAY', 25, 30);
 
-    // Docks & Piers at Old Harbor
-    const pier19 = toMap(-130, -75);
+    // Old Harbor & Pier 19 platform
+    const pier19 = toMap(this.world.pier19Pos.x, this.world.pier19Pos.z);
     ctx.fillStyle = '#1e2d3d';
-    ctx.fillRect(pier19.x - 30, pier19.y - 25, 90, 50);
+    ctx.fillRect(pier19.x - 54, pier19.y - 50, 108, 102);
     ctx.strokeStyle = '#385575';
-    ctx.strokeRect(pier19.x - 30, pier19.y - 25, 90, 50);
+    ctx.strokeRect(pier19.x - 54, pier19.y - 50, 108, 102);
 
     // City Streets / Road Corridors
     ctx.lineWidth = 14;
     ctx.strokeStyle = '#1e2633';
 
-    // North-South Avenues
-    [-70, 0, 70].forEach(wx => {
+    // North-South Avenues (matching World.createRoadGrid)
+    [-100, -50, 0, 50, 100].forEach(wx => {
       const top = toMap(wx, -180);
       const btm = toMap(wx, 180);
       ctx.beginPath();
@@ -327,9 +336,9 @@ export class PauseMenu {
     });
 
     // East-West Boulevards
-    [-120, -45, 30, 105].forEach(wz => {
-      const left = toMap(-75, wz);
-      const right = toMap(130, wz);
+    [-120, -60, 0, 60, 120].forEach(wz => {
+      const left = toMap(-180, wz);
+      const right = toMap(180, wz);
       ctx.beginPath();
       ctx.moveTo(left.x, left.y);
       ctx.lineTo(right.x, right.y);
@@ -351,29 +360,31 @@ export class PauseMenu {
     // District Labels
     ctx.font = '700 13px "Chakra Petch", sans-serif';
     ctx.fillStyle = '#4a5b70';
-    const dist1 = toMap(-30, 20);
+    const dist1 = toMap(30, 20);
     ctx.fillText('EASTLINE DISTRICT', dist1.x, dist1.y);
 
-    const dist2 = toMap(25, -70);
+    const dist2 = toMap(55, 70);
     ctx.fillText('SOUTHSIDE INDUSTRIAL', dist2.x, dist2.y);
 
-    const dist3 = toMap(-65, -120);
+    const dist3 = toMap(-35, -190);
     ctx.fillText('OLD HARBOR // PIER 19', dist3.x, dist3.y);
 
-    const dist4 = toMap(0, -165);
+    const dist4 = toMap(-110, -165);
     ctx.fillText('CENTRAL VESPER CORRIDOR', dist4.x, dist4.y);
 
-    // Key Landmarks / POIs
+    // Key Landmarks / POIs (sourced from World so the map cannot drift from
+    // the actual 3D coordinates again).
     const landmarks = [
-      { name: "Lena's Apartment (128 Eastline)", x: -25, z: 15, color: '#38bdf8', icon: '🏠' },
-      { name: "Adrian's Auto Repair", x: 35, z: -45, color: '#fb923c', icon: '🔧' },
-      { name: "Pier 19 Warehouse 19", x: -130, z: -75, color: '#a855f7', icon: '⚓' },
-      { name: "Southside Diner (Mara Vale)", x: 50, z: 60, color: '#eab308', icon: '☕' },
-      { name: "Meridian Properties HQ", x: 0, z: -160, color: '#06b6d4', icon: '🏢' }
+      { name: "Lena's Apartment (128 Eastline)", pos: this.world.lenaApartmentPos, color: '#38bdf8' },
+      { name: "Adrian's Auto Repair", pos: this.world.adrianGaragePos, color: '#fb923c' },
+      { name: "Pier 19 Warehouse 19", pos: this.world.warehouseEntrancePos, color: '#a855f7' },
+      { name: "Southside Diner (Mara Vale)", pos: this.world.southsideDinerPos, color: '#eab308' },
+      { name: "Meridian Properties HQ", pos: this.world.meridianOfficePos, color: '#06b6d4' },
+      { name: 'Vespera Municipal Trust', pos: this.world.financeOfficePos, color: '#10b981' }
     ];
 
     landmarks.forEach(lm => {
-      const p = toMap(lm.x, lm.z);
+      const p = toMap(lm.pos.x, lm.pos.z);
       // Outer ring
       ctx.beginPath();
       ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
@@ -389,10 +400,10 @@ export class PauseMenu {
       ctx.fillStyle = lm.color;
       ctx.fill();
 
-      // Label
+      // Label (keep labels inside the canvas near the top edge)
       ctx.fillStyle = '#cbd5e1';
       ctx.font = '600 11px "Inter", sans-serif';
-      ctx.fillText(lm.name, p.x + 12, p.y + 4);
+      ctx.fillText(lm.name, p.x + 12, Math.max(14, p.y + 4));
     });
 
     // Parked Vehicle (if any)
@@ -444,12 +455,15 @@ export class PauseMenu {
       ctx.fillText(`GPS DESTINATION: ${obj.description}`, op.x + 16, op.y + 4);
     }
 
-    // Player GPS Location Arrow
-    const heading = this.player.heading;
+    // Player / vehicle GPS location arrow. The on-foot model faces +Z at
+    // heading 0 while the vehicle faces -Z, so convert each convention.
+    const activeVehicle = this.getVehicle();
+    const heading = activeVehicle ? activeVehicle.heading : this.player.heading;
+    const arrowRotation = activeVehicle ? -heading : Math.PI - heading;
 
     ctx.save();
     ctx.translate(pp.x, pp.y);
-    ctx.rotate(heading);
+    ctx.rotate(arrowRotation);
 
     // Cyan GPS arrow
     ctx.beginPath();
@@ -468,8 +482,19 @@ export class PauseMenu {
     // Player coordinates info bar
     const infoEl = document.getElementById('map-coordinates-hud');
     if (infoEl) {
-      const headingDeg = Math.round(((-heading * 180 / Math.PI) + 360) % 360);
-      infoEl.innerText = `GPS [X: ${Math.round(playerPos.x)}, Z: ${Math.round(playerPos.z)}] | HEADING: ${headingDeg}° | DISTRICT: EASTLINE`;
+      const bearing = activeVehicle
+        ? Math.atan2(-Math.sin(heading), Math.cos(heading))
+        : Math.atan2(Math.sin(heading), -Math.cos(heading));
+      const headingDeg = Math.round(((bearing * 180 / Math.PI) + 360) % 360);
+      let district = 'EASTLINE';
+      if (playerPos.x > 250 && playerPos.z < -250) {
+        district = '128 EASTLINE // UNIT 102';
+      } else if (playerPos.z < -80) {
+        district = 'OLD HARBOR';
+      } else if (playerPos.z > 30) {
+        district = 'SOUTHSIDE';
+      }
+      infoEl.innerText = `GPS [X: ${Math.round(playerPos.x)}, Z: ${Math.round(playerPos.z)}] | HEADING: ${headingDeg}° | DISTRICT: ${district}`;
     }
   }
 
@@ -518,6 +543,12 @@ export class PauseMenu {
         li.innerHTML = `${isDone ? '✓' : isCurrent ? '▸' : '○'} ${obj.description}`;
         objListEl.appendChild(li);
       });
+    } else {
+      // Clear stale log entries after a mission ends or a save is loaded into
+      // free roam.
+      if (titleEl) titleEl.innerText = 'FREE ROAM // NO ACTIVE OPERATION';
+      if (descEl) descEl.innerText = 'Select a mission from the developer console or continue the campaign.';
+      if (objListEl) objListEl.innerHTML = '<li class="log-obj-pending">No active objectives</li>';
     }
 
     if (completedListEl) {

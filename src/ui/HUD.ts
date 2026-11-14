@@ -53,12 +53,15 @@ export class HUD {
   private photoCanvas: HTMLCanvasElement;
   private continueMissionBtn: HTMLElement;
   private closeEvidenceBtn: HTMLElement;
+  private evidenceClickHandler: (() => void) | null = null;
 
   // Mission Passed Banner
   private missionResultBannerEl: HTMLElement;
   private resultContinueBtn: HTMLElement;
   private resultRetryBtn: HTMLElement | null = null;
   public isMissionResultOpen: boolean = false;
+  private resultContinueHandler: (() => void) | null = null;
+  private resultRetryHandler: (() => void) | null = null;
 
   // Controls Modal
   private controlsHelpEl: HTMLElement;
@@ -81,6 +84,7 @@ export class HUD {
   private narrationTextEl: HTMLElement;
   private voiceToggleBtn: HTMLElement;
   public onVoiceToggle: ((enabled: boolean) => void) | null = null;
+  private notificationTimeout: any = null;
 
   // Camera View Badge (GTA 5 Style [V])
   private cameraViewBadgeEl: HTMLElement;
@@ -304,11 +308,15 @@ export class HUD {
 
     const playerPos = player.position;
     const heading = activeVehicle ? activeVehicle.heading : player.heading;
+    // The vehicle model faces -Z at heading 0, while the on-foot model faces
+    // +Z. Convert each convention to a canvas rotation so that the direction
+    // the player is actually moving/aiming always points up on the radar.
+    const radarRotation = activeVehicle ? -heading : Math.PI - heading;
 
     ctx.save();
     // Translate to center and rotate opposite to player heading so radar is heading-up
     ctx.translate(center, center);
-    ctx.rotate(heading);
+    ctx.rotate(radarRotation);
 
     // If inside Lena's Apartment interior
     if (playerPos.x > 250 && playerPos.z < -250) {
@@ -511,6 +519,10 @@ export class HUD {
   // Narration Methods
   public showNarration(speaker: string, text: string): void {
     if (!this.narrationBarEl) return;
+    if (this.notificationTimeout) {
+      clearTimeout(this.notificationTimeout);
+      this.notificationTimeout = null;
+    }
     this.narrationBarEl.classList.remove('hidden');
     this.narrationSpeakerEl.innerText = speaker;
     this.narrationTextEl.innerText = `"${text}"`;
@@ -518,10 +530,23 @@ export class HUD {
 
   public showNotification(text: string): void {
     this.showNarration('DEV CONSOLE', text);
+    if (this.notificationTimeout) {
+      clearTimeout(this.notificationTimeout);
+    }
+    this.notificationTimeout = setTimeout(() => {
+      // Only hide if this notification is still the one on screen.
+      if (this.narrationTextEl.innerText === `"${text}"`) {
+        this.hideNarration();
+      }
+    }, 2800);
   }
 
   public hideNarration(): void {
     if (!this.narrationBarEl) return;
+    if (this.notificationTimeout) {
+      clearTimeout(this.notificationTimeout);
+      this.notificationTimeout = null;
+    }
     this.narrationBarEl.classList.add('hidden');
   }
 
@@ -595,11 +620,17 @@ export class HUD {
 
     this.isEvidenceOpen = true;
     this.evidenceModalEl.classList.remove('hidden');
+    // Remove a handler left behind if the previous modal was dismissed with
+    // the close button/Escape instead of the continue button.
+    if (this.evidenceClickHandler) {
+      this.continueMissionBtn.removeEventListener('click', this.evidenceClickHandler);
+      this.evidenceClickHandler = null;
+    }
     const handler = () => {
       this.hideEvidence();
-      this.continueMissionBtn.removeEventListener('click', handler);
       if (cb) cb();
     };
+    this.evidenceClickHandler = handler;
     this.continueMissionBtn.addEventListener('click', handler);
   }
 
@@ -971,6 +1002,10 @@ export class HUD {
   public hideEvidence(): void {
     this.isEvidenceOpen = false;
     this.evidenceModalEl.classList.add('hidden');
+    if (this.evidenceClickHandler) {
+      this.continueMissionBtn.removeEventListener('click', this.evidenceClickHandler);
+      this.evidenceClickHandler = null;
+    }
   }
 
   // Mission Passed Banner
@@ -978,6 +1013,8 @@ export class HUD {
     const resultTitle = document.getElementById('result-title')!;
     const resultSub = document.getElementById('result-sub')!;
     const resultReward = document.getElementById('result-reward')!;
+
+    this.clearResultHandlers();
 
     this.missionResultBannerEl.classList.remove('failed');
     resultTitle.innerText = 'MISSION PASSED';
@@ -992,13 +1029,13 @@ export class HUD {
     this.isMissionResultOpen = true;
     this.missionResultBannerEl.classList.remove('hidden');
 
-    const handler = () => {
+    this.resultContinueHandler = () => {
       this.isMissionResultOpen = false;
       this.missionResultBannerEl.classList.add('hidden');
-      this.resultContinueBtn.removeEventListener('click', handler);
+      this.clearResultHandlers();
       onContinue();
     };
-    this.resultContinueBtn.addEventListener('click', handler);
+    this.resultContinueBtn.addEventListener('click', this.resultContinueHandler);
   }
 
   // Mission Failed Banner
@@ -1012,6 +1049,8 @@ export class HUD {
     const resultSub = document.getElementById('result-sub')!;
     const resultReward = document.getElementById('result-reward')!;
 
+    this.clearResultHandlers();
+
     this.missionResultBannerEl.classList.add('failed');
     resultTitle.innerText = 'MISSION FAILED';
     resultSub.innerText = missionTitle;
@@ -1024,27 +1063,41 @@ export class HUD {
       this.resultRetryBtn.classList.remove('hidden');
       this.resultRetryBtn.innerText = 'RETRY MISSION';
 
-      const retryHandler = () => {
+      this.resultRetryHandler = () => {
         this.isMissionResultOpen = false;
         this.missionResultBannerEl.classList.add('hidden');
-        this.resultRetryBtn?.removeEventListener('click', retryHandler);
-        this.resultContinueBtn.removeEventListener('click', abandonHandler);
+        this.clearResultHandlers();
         onRetry();
       };
-      this.resultRetryBtn.addEventListener('click', retryHandler);
+      this.resultRetryBtn.addEventListener('click', this.resultRetryHandler);
     }
 
     this.resultContinueBtn.innerText = 'ABANDON MISSION (FREE ROAM)';
-    const abandonHandler = () => {
+    this.resultContinueHandler = () => {
       this.isMissionResultOpen = false;
       this.missionResultBannerEl.classList.add('hidden');
-      if (this.resultRetryBtn) {
-        this.resultRetryBtn.classList.add('hidden');
-      }
-      this.resultContinueBtn.removeEventListener('click', abandonHandler);
+      this.clearResultHandlers();
       onAbandon();
     };
-    this.resultContinueBtn.addEventListener('click', abandonHandler);
+    this.resultContinueBtn.addEventListener('click', this.resultContinueHandler);
+  }
+
+  private clearResultHandlers(): void {
+    if (this.resultContinueHandler) {
+      this.resultContinueBtn.removeEventListener('click', this.resultContinueHandler);
+      this.resultContinueHandler = null;
+    }
+    if (this.resultRetryHandler && this.resultRetryBtn) {
+      this.resultRetryBtn.removeEventListener('click', this.resultRetryHandler);
+      this.resultRetryHandler = null;
+    }
+  }
+
+  /** Force-closes a Passed/Failed banner (debug warps, save loads). */
+  public dismissMissionResult(): void {
+    this.isMissionResultOpen = false;
+    this.missionResultBannerEl.classList.add('hidden');
+    this.clearResultHandlers();
   }
 
   // Controls Modal
@@ -1083,6 +1136,7 @@ export class HUD {
     }
 
     this.wastedTimeout = setTimeout(() => {
+      this.wastedTimeout = null;
       this.hideWasted();
       onRespawn();
     }, 3200);
@@ -1104,6 +1158,10 @@ export class HUD {
 
   public hideWasted(): void {
     if (!this.wastedScreenEl) return;
+    if (this.wastedTimeout) {
+      clearTimeout(this.wastedTimeout);
+      this.wastedTimeout = null;
+    }
     this.wastedScreenEl.classList.add('hidden');
     if (this.wastedProgressBarEl) {
       this.wastedProgressBarEl.style.width = '0%';

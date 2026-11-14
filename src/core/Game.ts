@@ -12,9 +12,11 @@ import { HUD } from '../ui/HUD.ts';
 import { InputManager } from './InputManager.ts';
 import { AudioManager } from '../audio/AudioManager.ts';
 import { GameStateManager, GameMode } from './GameState.ts';
-import { SaveSystem } from './SaveSystem.ts';
+import { SaveSystem, SaveSlotData } from './SaveSystem.ts';
+import { MissionData, ObjectiveType } from '../missions/Mission.ts';
 import { EventBus } from './EventBus.ts';
 import { EnemyManager } from '../ai/EnemyAI.ts';
+import { createMission01Data } from '../missions/data/M01_HomeAgain.ts';
 import { createMission02Data } from '../missions/data/M02_OldDebts.ts';
 import { createMission03Data } from '../missions/data/M03_TheHarbor.ts';
 import { createMission04Data } from '../missions/data/M04_ColdStorage.ts';
@@ -113,12 +115,16 @@ export class Game {
       this.audio,
       this.narrationMgr,
       this.lighting,
+      this.world,
       () => this.vehicleMgr.activeVehicle,
       () => this.scene.fog as THREE.FogExp2,
       () => {
-        this.state.setState(GameMode.FREE_ROAM);
+        this.state.setState(
+          this.missionMgr.isMissionActive ? GameMode.MISSION_ACTIVE : GameMode.FREE_ROAM
+        );
         this.input.requestPointerLock();
-      }
+      },
+      (data) => this.restoreFromSave(data)
     );
 
     this.debugMenu = new DebugMenu(this);
@@ -258,17 +264,15 @@ export class Game {
         this.state.setState(GameMode.FREE_ROAM);
         this.input.requestPointerLock();
 
-        // Chain next canonical mission
-        if (mission.id === 'M01') {
-          setTimeout(() => {
+        // Chain next canonical mission after the banner delay. The guard in
+        // scheduleMissionChain prevents a stale timer from clobbering a debug
+        // warp or save load that started a different mission in the meantime.
+        this.scheduleMissionChain(mission, () => {
+          if (mission.id === 'M01') {
             this.missionMgr.startMission(createMission02Data(this.world.adrianGaragePos));
-          }, 800);
-        } else if (mission.id === 'M02') {
-          setTimeout(() => {
+          } else if (mission.id === 'M02') {
             this.missionMgr.startMission(createMission03Data(this.world.pier19Pos));
-          }, 800);
-        } else if (mission.id === 'M03') {
-          setTimeout(() => {
+          } else if (mission.id === 'M03') {
             this.missionMgr.startMission(
               createMission04Data(
                 this.world.warehouseEntrancePos,
@@ -276,9 +280,7 @@ export class Game {
                 this.world.warehouseLockerPos
               )
             );
-          }, 800);
-        } else if (mission.id === 'M04') {
-          setTimeout(() => {
+          } else if (mission.id === 'M04') {
             this.narrationMgr.queueNarrations([
               {
                 speaker: 'KALEB (INTERNAL)',
@@ -298,9 +300,7 @@ export class Game {
                 this.world.meridianDeskPos
               )
             );
-          }, 800);
-        } else if (mission.id === 'M05') {
-          setTimeout(() => {
+          } else if (mission.id === 'M05') {
             this.narrationMgr.queueNarrations([
               {
                 speaker: 'KALEB (INTERNAL)',
@@ -320,9 +320,7 @@ export class Game {
                 this.world.shellOfficePos
               )
             );
-          }, 800);
-        } else if (mission.id === 'M06') {
-          setTimeout(() => {
+          } else if (mission.id === 'M06') {
             this.narrationMgr.queueNarrations([
               {
                 speaker: 'KALEB (INTERNAL)',
@@ -336,9 +334,7 @@ export class Game {
               }
             ]);
             this.startMission07();
-          }, 800);
-        } else if (mission.id === 'M07') {
-          setTimeout(() => {
+          } else if (mission.id === 'M07') {
             this.narrationMgr.queueNarrations([
               {
                 speaker: 'KALEB (INTERNAL)',
@@ -359,9 +355,7 @@ export class Game {
                 this.world.financeTerminalPos
               )
             );
-          }, 800);
-        } else if (mission.id === 'M08') {
-          setTimeout(() => {
+          } else if (mission.id === 'M08') {
             this.narrationMgr.queueNarrations([
               {
                 speaker: 'KALEB (INTERNAL)',
@@ -380,17 +374,22 @@ export class Game {
               }
             ]);
             this.hud.showNotification('CAMPAIGN ACT II COMPLETE — FREE ROAM UNLOCKED');
-          }, 800);
-        }
+          }
+        });
       });
     });
 
-    // Toggle controls help with F1
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'F1') {
-        this.hud.toggleControls();
-      }
-    });
+    // Pause menu button: make sure the simulation actually pauses when the
+    // HUD button is used instead of the Escape key.
+    const menuBtn = document.getElementById('pause-menu-btn');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', () => {
+        if (!this.pauseMenu.isOpen()) {
+          this.state.setState(GameMode.PAUSED);
+          this.input.exitPointerLock();
+        }
+      });
+    }
   }
 
   private setupStartScreen(): void {
@@ -443,6 +442,17 @@ export class Game {
     }
   }
 
+  private scheduleMissionChain(completedMission: MissionData, action: () => void): void {
+    setTimeout(() => {
+      // If a debug warp, retry, or save load started another mission while the
+      // 800ms banner delay was running, the old chain must not fire.
+      if (this.missionMgr.currentMission !== completedMission || this.missionMgr.isMissionActive) {
+        return;
+      }
+      action();
+    }, 800);
+  }
+
   public startMission07(): void {
     const jonahPos = new THREE.Vector3(-56, 0, 67);
     this.missionMgr.startMission(
@@ -452,6 +462,131 @@ export class Game {
         this.world.harborDepotPos
       )
     );
+  }
+
+  /**
+   * Recreates the canonical mission data for a mission id. Used when loading a
+   * save so the game resumes the saved mission instead of leaving a stale or
+   * null mission object attached to the restored objective index.
+   */
+  private createMissionDataById(id: string): MissionData | null {
+    switch (id) {
+      case 'M01':
+        return createMission01Data(this.world.lenaApartmentPos);
+      case 'M02':
+        return createMission02Data(this.world.adrianGaragePos);
+      case 'M03':
+        return createMission03Data(this.world.pier19Pos);
+      case 'M04':
+        return createMission04Data(
+          this.world.warehouseEntrancePos,
+          this.world.warehouseDeskPos,
+          this.world.warehouseLockerPos
+        );
+      case 'M05':
+        return createMission05Data(
+          this.world.southsideDinerPos,
+          this.world.meridianOfficePos,
+          this.world.meridianDeskPos
+        );
+      case 'M06':
+        return createMission06Data(
+          this.world.redevelopmentSitePos,
+          this.world.contractorMeetingPos,
+          this.world.shellOfficePos
+        );
+      case 'M07':
+        return createMission07Data(
+          this.world.adrianGaragePos,
+          new THREE.Vector3(-56, 0, 67),
+          this.world.harborDepotPos
+        );
+      case 'M08':
+        return createMission08Data(
+          this.world.southsideDinerPos,
+          this.world.financeOfficePos,
+          this.world.financeArchivePos,
+          this.world.financeTerminalPos
+        );
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Restores the world state that SaveSystem cannot know about on its own:
+   * active mission data, interiors, vehicles, and camera.
+   */
+  private restoreFromSave(data: SaveSlotData): void {
+    this.hud.dismissMissionResult();
+    if (this.hud.isEvidenceOpen) {
+      this.hud.hideEvidence();
+    }
+    // Never resume while the player is dead / seated in a vehicle that was not
+    // persisted. Clear transient combat and vehicle state first.
+    if (this.vehicleMgr.activeVehicle) {
+      this.vehicleMgr.activeVehicle.isOccupied = false;
+    }
+    this.vehicleMgr.vehicles.forEach(v => { v.isOccupied = false; });
+    this.vehicleMgr.activeVehicle = null;
+    this.player.isInVehicle = false;
+    this.player.isDead = false;
+    this.player.resetCombatState();
+    this.player.mesh.visible = true;
+    this.player.mesh.rotation.set(0, this.player.heading, 0);
+    this.audio.stopEngine();
+    this.enemyMgr.clear();
+
+    const px = this.player.position.x;
+    const pz = this.player.position.z;
+
+    // Apartment interior is a detached room cell, so infer the mode from the
+    // saved coordinates and avoid leaving the player stranded in the void.
+    const savedInsideApartment = px > 250 && pz < -250;
+    this.isInApartmentInterior = savedInsideApartment;
+    this.camera.isInteriorMode = savedInsideApartment;
+
+    // If a save was made inside a shutter-bound interior, make sure the exit
+    // is open after loading.
+    if (px > -73 && px < -47 && pz > 35 && pz < 65) {
+      this.world.openGarageShutter();
+    }
+    if (px > 68 && px < 102 && pz > -185 && pz < -155) {
+      this.world.openWarehouseShutter();
+    }
+
+    // M02 unlocks the shotgun permanently for the campaign.
+    if (this.missionMgr.completedMissions.has('M02')) {
+      this.player.hasShotgun = true;
+    }
+
+    const missionId = data.missions?.currentMissionId ?? null;
+    const missionData = missionId ? this.createMissionDataById(missionId) : null;
+    if (missionData) {
+      this.missionMgr.startMission(missionData);
+      this.missionMgr.jumpToObjective(data.missions.currentObjectiveIndex || 0);
+
+      // Enemy squads are not serialized. If the save was made during a combat
+      // objective, do not strand the player on an unwinnable "kill them all"
+      // stage with zero enemies; resume after the cleared fight.
+      const restoredObj = this.missionMgr.getCurrentObjective();
+      if (
+        restoredObj &&
+        (restoredObj.type === ObjectiveType.ELIMINATE || restoredObj.id.startsWith('eliminate_')) &&
+        this.enemyMgr.enemies.length === 0
+      ) {
+        this.missionMgr.advanceObjective();
+      }
+      this.state.setState(GameMode.MISSION_ACTIVE);
+    } else {
+      this.missionMgr.currentMission = null;
+      this.missionMgr.isMissionActive = false;
+      this.missionMgr.currentObjectiveIndex = 0;
+      this.state.setState(GameMode.FREE_ROAM);
+    }
+
+    this.camera.snap(this.player.position, this.player.heading + Math.PI, 0.12, this.world.colliders);
+    this.hud.showNarration('GAME LOADED', `${data.slotName} restored successfully`);
   }
 
   public update(deltaTime: number): void {
@@ -477,6 +612,15 @@ export class Game {
       return;
     }
 
+    // Do not simulate the world behind the title screen. M01 is created before
+    // the player presses START, so running the mission update here would
+    // auto-complete its first objective while the menu is still visible.
+    const startScreenEl = document.getElementById('start-screen');
+    if (startScreenEl && !startScreenEl.classList.contains('hidden')) {
+      this.input.update();
+      return;
+    }
+
     // 1. Check Pause / Map / Controls hotkeys
     if (this.input.isKeyPressed('Escape') || this.input.isKeyPressed('KeyP')) {
       if (this.hud.isEvidenceOpen) {
@@ -486,7 +630,11 @@ export class Game {
         // Mission Passed / Failed banner handles its own resolution
       } else if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
-      } else if (this.state.getState() !== GameMode.MAIN_MENU) {
+      } else if (
+        this.state.getState() !== GameMode.MAIN_MENU &&
+        !this.hud.isWastedOpen &&
+        !this.player.isDead
+      ) {
         this.state.setState(GameMode.PAUSED);
         this.input.exitPointerLock();
         this.pauseMenu.open('map');
@@ -494,7 +642,12 @@ export class Game {
     } else if (this.input.isKeyPressed('KeyM')) {
       if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
-      } else if (!this.hud.isMissionResultOpen && this.state.getState() !== GameMode.MAIN_MENU) {
+      } else if (
+        !this.hud.isMissionResultOpen &&
+        !this.hud.isWastedOpen &&
+        !this.player.isDead &&
+        this.state.getState() !== GameMode.MAIN_MENU
+      ) {
         this.state.setState(GameMode.PAUSED);
         this.input.exitPointerLock();
         this.pauseMenu.open('map');
@@ -502,21 +655,26 @@ export class Game {
     } else if (this.input.isKeyPressed('F1')) {
       if (this.pauseMenu.isOpen()) {
         this.pauseMenu.close();
-      } else if (!this.hud.isMissionResultOpen && this.state.getState() !== GameMode.MAIN_MENU) {
+      } else if (
+        !this.hud.isMissionResultOpen &&
+        !this.hud.isWastedOpen &&
+        !this.player.isDead &&
+        this.state.getState() !== GameMode.MAIN_MENU
+      ) {
         this.state.setState(GameMode.PAUSED);
         this.input.exitPointerLock();
         this.pauseMenu.open('controls');
       }
     }
 
-    // Camera View Mode cycling (GTA 5 style 'V' key)
-    if (this.input.isKeyPressed('KeyV')) {
-      const modeText = this.camera.cycleViewMode();
-      this.audio.playUIClick();
-      this.hud.showViewModeBadge(modeText);
+    if (this.state.getState() === GameMode.PAUSED) {
+      this.input.update();
+      return;
     }
 
-    if (this.state.getState() === GameMode.PAUSED) {
+    // Modal UI must fully freeze gameplay. Otherwise clicks on modal buttons
+    // are read as gunfire and WASD keeps moving Kaleb behind the overlay.
+    if (this.hud.isEvidenceOpen || this.hud.isWastedOpen || this.hud.isMissionResultOpen) {
       this.input.update();
       return;
     }
@@ -531,6 +689,13 @@ export class Game {
       return;
     }
 
+    // Camera View Mode cycling (GTA 5 style 'V' key)
+    if (this.input.isKeyPressed('KeyV')) {
+      const modeText = this.camera.cycleViewMode();
+      this.audio.playUIClick();
+      this.hud.showViewModeBadge(modeText);
+    }
+
     // Camera look
     if (this.input.isPointerLocked) {
       this.camera.handleMouseLook(mouseDelta.x, mouseDelta.y);
@@ -541,8 +706,19 @@ export class Game {
     this.world.update(deltaTime);
     this.world.updateStreetlights(this.lighting.timeOfDay);
 
+    // If a mission/NPC/interior interaction currently owns the [E] prompt,
+    // entering a nearby parked car must not steal the key press.
+    const priorityInteraction = this.determineInteraction();
+    const blockVehicleEntry = !!priorityInteraction && priorityInteraction.priority !== 'vehicle';
+
     // 3. Update Vehicle Manager
-    this.vehicleMgr.update(deltaTime, this.player, this.input, this.world.colliders);
+    this.vehicleMgr.update(
+      deltaTime,
+      this.player,
+      this.input,
+      this.world.colliders,
+      blockVehicleEntry
+    );
 
     // 4. Update Player
     this.player.update(deltaTime, this.input, this.camera, this.world.colliders, this.scene);
@@ -584,14 +760,9 @@ export class Game {
     this.input.update();
   }
 
-  private determineInteraction(): { text: string; key: string } | null {
+  private determineInteraction(): { text: string; key: string; priority?: 'mission' | 'vehicle' } | null {
     if (this.player.isInVehicle) {
       return { text: 'Exit Vehicle', key: 'E' };
-    }
-
-    // Vehicle entrance
-    if (this.vehicleMgr.nearbyVehicle) {
-      return { text: `Enter ${this.vehicleMgr.nearbyVehicle.config.name}`, key: 'E' };
     }
 
     const currentObj = this.missionMgr.getCurrentObjective();
@@ -766,6 +937,16 @@ export class Game {
           return { text: "Download Wire Transfer Ledger", key: 'E' };
         }
       }
+    }
+
+    // Vehicle entrance is the fallback prompt so a mission interaction or
+    // story NPC standing next to a parked car is not masked by "Enter ...".
+    if (this.vehicleMgr.nearbyVehicle) {
+      return {
+        text: `Enter ${this.vehicleMgr.nearbyVehicle.config.name}`,
+        key: 'E',
+        priority: 'vehicle'
+      };
     }
 
     return null;
@@ -1304,14 +1485,11 @@ export class Game {
 
     // Objective 2: resolve_debt_choice
     if (currentObj.id === 'resolve_debt_choice') {
-      const isChoiceA = this.input.isKeyPressed('Digit1') || this.input.isKeyDown('Digit1') || this.input.isKeyPressed('Key1') || this.input.isKeyDown('Key1') || this.input.isKeyPressed('Numpad1') || this.input.isKeyDown('Numpad1');
-      const isChoiceB = this.input.isKeyPressed('Digit2') || this.input.isKeyDown('Digit2') || this.input.isKeyPressed('Key2') || this.input.isKeyDown('Key2') || this.input.isKeyPressed('Numpad2') || this.input.isKeyDown('Numpad2');
-      const isChoiceC = this.input.isKeyPressed('Digit3') || this.input.isKeyDown('Digit3') || this.input.isKeyPressed('Key3') || this.input.isKeyDown('Key3') || this.input.isKeyPressed('Numpad3') || this.input.isKeyDown('Numpad3');
+      const isChoiceA = this.input.isKeyPressed('Digit1') || this.input.isKeyPressed('Numpad1');
+      const isChoiceB = this.input.isKeyPressed('Digit2') || this.input.isKeyPressed('Numpad2');
+      const isChoiceC = this.input.isKeyPressed('Digit3') || this.input.isKeyPressed('Numpad3');
 
       if (isChoiceA) {
-        this.input.consumeKey('Digit1');
-        this.input.consumeKey('Key1');
-        this.input.consumeKey('Numpad1');
         this.audio.playUIClick();
 
         if (this.player.cash >= this.m07DebtAmount) {
@@ -1347,9 +1525,6 @@ export class Game {
           ]);
         }
       } else if (isChoiceB) {
-        this.input.consumeKey('Digit2');
-        this.input.consumeKey('Key2');
-        this.input.consumeKey('Numpad2');
         this.audio.playUIClick();
 
         this.m07Choice = 'B';
@@ -1371,9 +1546,6 @@ export class Game {
           this.missionMgr.jumpToObjective(3); // Jump to eliminate_enforcers
         });
       } else if (isChoiceC) {
-        this.input.consumeKey('Digit3');
-        this.input.consumeKey('Key3');
-        this.input.consumeKey('Numpad3');
         this.audio.playUIClick();
 
         this.m07Choice = 'C';

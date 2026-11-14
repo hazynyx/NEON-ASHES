@@ -191,14 +191,26 @@ export class DebugMenu {
             heading: -Math.PI / 4
           },
           {
-            id: 'pursue_courier',
-            label: '3. Intercept Syndicate Courier',
-            warpPos: new THREE.Vector3(65, 0, -170),
+            id: 'observe_handoff',
+            label: '3. Observe Syndicate Handoff',
+            warpPos: new THREE.Vector3(50, 0, -165),
+            heading: -Math.PI / 4
+          },
+          {
+            id: 'chase_courier',
+            label: '4. Intercept Syndicate Courier',
+            warpPos: new THREE.Vector3(20, 0, -105),
+            heading: 0
+          },
+          {
+            id: 'retrieve_key',
+            label: '5. Recover Pier 19 Cold Storage Key',
+            warpPos: new THREE.Vector3(20, 0, -105),
             heading: 0
           },
           {
             id: 'escape_harbor',
-            label: '4. Escape Harbor Perimeter',
+            label: '6. Escape Harbor Perimeter',
             warpPos: new THREE.Vector3(65, 0, -150),
             heading: Math.PI
           }
@@ -221,8 +233,14 @@ export class DebugMenu {
             heading: 0
           },
           {
-            id: 'search_terminal',
-            label: '2. Search Manifest Terminal Desk',
+            id: 'unlock_gate',
+            label: '2. Unlock the Cold Storage Roll-Up Gate',
+            warpPos: new THREE.Vector3(85, 0, -153),
+            heading: 0
+          },
+          {
+            id: 'search_manifest',
+            label: '3. Search Manifest Terminal Desk',
             warpPos: new THREE.Vector3(92, 0, -176),
             heading: 0,
             setup: (g) => {
@@ -230,8 +248,8 @@ export class DebugMenu {
             }
           },
           {
-            id: 'recover_drive',
-            label: '3. Retrieve Encrypted Drive (Locker 4B)',
+            id: 'retrieve_drive',
+            label: '4. Retrieve Encrypted Drive (Locker 4B)',
             warpPos: new THREE.Vector3(78, 0, -178),
             heading: 0,
             setup: (g) => {
@@ -240,7 +258,7 @@ export class DebugMenu {
           },
           {
             id: 'eliminate_guards',
-            label: '4. Eliminate Arriving Syndicate Heavies',
+            label: '5. Eliminate Arriving Syndicate Heavies',
             warpPos: new THREE.Vector3(85, 0, -165),
             heading: Math.PI,
             setup: (g) => {
@@ -252,8 +270,8 @@ export class DebugMenu {
             }
           },
           {
-            id: 'escape_pier',
-            label: '5. Escape Pier 19 Perimeter',
+            id: 'escape_perimeter',
+            label: '6. Escape Pier 19 Perimeter',
             warpPos: new THREE.Vector3(85, 0, -145),
             heading: Math.PI,
             setup: (g) => {
@@ -275,38 +293,50 @@ export class DebugMenu {
           {
             id: 'goto_diner',
             label: '1. Drive to Southside Diner',
-            warpPos: new THREE.Vector3(50, 0, 65),
+            warpPos: new THREE.Vector3(50, 0, 55),
             heading: 0
           },
           {
-            id: 'talk_to_mara',
+            id: 'talk_mara',
             label: '2. Meet Mara Vale on Diner Patio',
-            warpPos: new THREE.Vector3(48, 0, 48),
+            warpPos: new THREE.Vector3(48, 0, 37),
+            heading: Math.PI
+          },
+          {
+            id: 'goto_meridian',
+            label: '3. Travel to Meridian Properties Tower',
+            warpPos: new THREE.Vector3(0, 0, -140),
             heading: 0
           },
           {
-            id: 'infiltrate_meridian',
-            label: '3. Infiltrate Meridian Properties Tower',
-            warpPos: new THREE.Vector3(0, 0, -154),
+            id: 'infiltrate_office',
+            label: '4. Infiltrate the Ground-Floor Archive Desk',
+            warpPos: new THREE.Vector3(0, 0, -150),
             heading: 0
           },
           {
-            id: 'photograph_ledger',
-            label: '4. Photograph Buyout Agreement at Desk',
-            warpPos: new THREE.Vector3(0, 0, -163),
+            id: 'photograph_evidence',
+            label: '5. Photograph Buyout Agreement at Desk',
+            warpPos: new THREE.Vector3(0, 0, -162),
             heading: 0
           },
           {
-            id: 'escape_central',
-            label: '5. Escape Central Vesper Corridor',
-            warpPos: new THREE.Vector3(0, 0, -135),
+            id: 'return_to_mara',
+            label: '6. Return the Photographs to Mara',
+            warpPos: new THREE.Vector3(48, 0, 37),
+            heading: Math.PI
+          },
+          {
+            id: 'debrief_mara',
+            label: '7. Debrief with Mara Vale',
+            warpPos: new THREE.Vector3(48, 0, 37),
             heading: Math.PI
           }
         ]
       },
       M06: {
         id: 'M06',
-        name: 'BAD BUSINESS (Act I // Eastline Redevelopment Surveillance)',
+        name: 'BAD BUSINESS (Act II // Eastline Redevelopment Surveillance)',
         createData: (g) =>
           createMission06Data(
             g.world.redevelopmentSitePos,
@@ -354,7 +384,7 @@ export class DebugMenu {
       },
       M07: {
         id: 'M07',
-        name: 'OLD FRIENDS (Act I // Jonah Reyes Debt & Marrow Syndicate)',
+        name: 'OLD FRIENDS (Act II // Jonah Reyes Debt & Marrow Syndicate)',
         createData: (g) =>
           createMission07Data(
             g.world.adrianGaragePos,
@@ -520,8 +550,8 @@ export class DebugMenu {
       {
         name: 'Southside Diner (Patio)',
         category: 'Southside',
-        pos: new THREE.Vector3(48, 0, 48),
-        heading: 0
+        pos: new THREE.Vector3(48, 0, 35),
+        heading: Math.PI
       },
       {
         name: 'Old Harbor Pier 19 (Entrance)',
@@ -553,7 +583,7 @@ export class DebugMenu {
       {
         name: 'Meridian Properties Tower',
         category: 'Central',
-        pos: new THREE.Vector3(0, 0, -154),
+        pos: new THREE.Vector3(0, 0, -140),
         heading: 0
       },
       {
@@ -583,8 +613,8 @@ export class DebugMenu {
       {
         name: 'Vespera Municipal Trust (M08 Infiltration)',
         category: 'Central',
-        pos: new THREE.Vector3(-35, 0, -132),
-        heading: Math.PI
+        pos: new THREE.Vector3(-35, 0, -130),
+        heading: 0
       }
     ];
   }
@@ -909,6 +939,20 @@ export class DebugMenu {
     }
     this.game.state.setState(GameMode.MISSION_ACTIVE);
 
+    // A Passed/Failed banner or evidence modal would otherwise keep the new
+    // mission frozen by the update-loop overlay guard.
+    this.game.hud.dismissMissionResult();
+    if (this.game.hud.isEvidenceOpen) {
+      this.game.hud.hideEvidence();
+    }
+    if (this.game.hud.isWastedOpen) {
+      this.game.hud.hideWasted();
+    }
+    if (this.game.player.isDead) {
+      this.game.player.isDead = false;
+      this.game.player.health = this.game.player.maxHealth;
+    }
+
     // Close pause menu if open
     if (this.game.pauseMenu.isOpen()) {
       this.game.pauseMenu.close();
@@ -953,6 +997,17 @@ export class DebugMenu {
   }
 
   public teleportPlayerTo(name: string, pos: THREE.Vector3, heading: number = 0, setup?: (game: Game) => void): void {
+    this.game.hud.dismissMissionResult();
+    if (this.game.hud.isEvidenceOpen) {
+      this.game.hud.hideEvidence();
+    }
+    if (this.game.hud.isWastedOpen) {
+      this.game.hud.hideWasted();
+    }
+    if (this.game.player.isDead) {
+      this.game.player.isDead = false;
+      this.game.player.health = this.game.player.maxHealth;
+    }
     if (this.game.player.isInVehicle && this.game.vehicleMgr.activeVehicle) {
       this.game.vehicleMgr.exitVehicle(this.game.player);
     }
@@ -971,10 +1026,12 @@ export class DebugMenu {
   }
 
   private spawnCarInFront(type: 'vesper_sedan' | 'police_cruiser' | 'metro_coupe'): void {
+    // The player faces +Z at heading 0 and the vehicle model faces -Z, so the
+    // in-front vector is (-sin, -cos) in both cases.
     const fwd = new THREE.Vector3(
-      Math.sin(this.game.player.heading),
+      -Math.sin(this.game.player.heading),
       0,
-      Math.cos(this.game.player.heading)
+      -Math.cos(this.game.player.heading)
     );
     const spawnPos = this.game.player.position.clone().addScaledVector(fwd, 4.5);
     spawnPos.y = 0;

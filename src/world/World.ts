@@ -27,7 +27,10 @@ export class World {
   public warehouseLockerPos: THREE.Vector3 = new THREE.Vector3(78, 0, -180);
 
   // Southside Diner (Mara Vale meeting location) & Meridian Properties HQ
-  public southsideDinerPos: THREE.Vector3 = new THREE.Vector3(50, 0, 46);
+  // southsideDinerPos is the walkable patio/story trigger; the diner building
+  // itself is centered 11m north of it.
+  public southsideDinerPos: THREE.Vector3 = new THREE.Vector3(50, 0, 34.8);
+  public southsideDinerBuildingPos: THREE.Vector3 = new THREE.Vector3(50, 0, 46);
   public meridianOfficePos: THREE.Vector3 = new THREE.Vector3(0, 0, -160);
   public meridianDeskPos: THREE.Vector3 = new THREE.Vector3(0, 0, -164);
 
@@ -1049,7 +1052,8 @@ export class World {
   }
 
   private createSouthsideDiner(): void {
-    const pos = this.southsideDinerPos;
+    const pos = this.southsideDinerBuildingPos;
+    const patio = this.southsideDinerPos;
     const width = 22;
     const depth = 16;
     const height = 5.5;
@@ -1105,25 +1109,25 @@ export class World {
     // Outdoor Patio Awning & Tables (Where Mara Vale meets Kaleb)
     const awningMat = new THREE.MeshStandardMaterial({ color: 0x991b1b }); // Burgundy red awning
     const awning = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 5), awningMat);
-    awning.position.set(pos.x, 3.6, pos.z - depth / 2 - 3.2);
+    awning.position.set(patio.x, 3.6, patio.z - 1.2);
     this.scene.add(awning);
 
     const tableMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6 });
     [-3, 3].forEach(tx => {
       const table = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.9, 12), tableMat);
-      table.position.set(pos.x + tx, 0.45, pos.z - depth / 2 - 3.2);
+      table.position.set(patio.x + tx, 0.45, patio.z - 1.2);
       this.scene.add(table);
     });
 
     // Warm Patio Lighting
     const patioLight = new THREE.PointLight(0xf59e0b, 2.8, 16);
-    patioLight.position.set(pos.x, 3.2, pos.z - depth / 2 - 3.2);
+    patioLight.position.set(patio.x, 3.2, patio.z);
     this.scene.add(patioLight);
 
     this.pois.push({
       id: 'southside_diner',
       name: 'Southside Diner (Mara Vale)',
-      position: new THREE.Vector3(pos.x, 0, pos.z - depth / 2 - 3.2),
+      position: patio.clone(),
       type: 'diner'
     });
   }
@@ -1134,22 +1138,91 @@ export class World {
     const depth = 26;
     const height = 28;
 
-    // Corporate Tower Base (Polished Dark Slate & Glass)
+    // Corporate Tower Base (Polished Dark Slate & Glass). The ground floor is
+    // hollow with a real door opening so the M05 archive desk is reachable by
+    // walking in; previously a single solid box made the objective impossible.
     const oMat = new THREE.MeshStandardMaterial({
       color: 0x0f172a,
       roughness: 0.3,
       metalness: 0.7
     });
 
-    const towerMesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), oMat);
-    towerMesh.position.set(pos.x, height / 2, pos.z);
-    towerMesh.castShadow = true;
-    towerMesh.receiveShadow = true;
-    this.scene.add(towerMesh);
+    const wallT = 1.2;
+    const doorW = 6.4;
+    const doorH = 3.4;
+    const frontZ = pos.z + depth / 2 - wallT / 2;
 
-    // Collider
-    const bbox = new THREE.Box3().setFromObject(towerMesh);
-    this.colliders.push(bbox);
+    const addWall = (
+      w: number,
+      h: number,
+      d: number,
+      x: number,
+      y: number,
+      z: number
+    ): THREE.Mesh => {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), oMat);
+      wall.position.set(x, y, z);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      this.scene.add(wall);
+      this.colliders.push(new THREE.Box3().setFromObject(wall));
+      return wall;
+    };
+
+    // Back / left / right walls
+    addWall(width, height, wallT, pos.x, height / 2, pos.z - depth / 2 + wallT / 2);
+    addWall(wallT, height, depth, pos.x - width / 2 + wallT / 2, height / 2, pos.z);
+    addWall(wallT, height, depth, pos.x + width / 2 - wallT / 2, height / 2, pos.z);
+
+    // Front wall split around the entrance
+    const frontSegmentWidth = (width - doorW) / 2;
+    addWall(
+      frontSegmentWidth,
+      height,
+      wallT,
+      pos.x - (doorW / 2 + frontSegmentWidth / 2),
+      height / 2,
+      frontZ
+    );
+    addWall(
+      frontSegmentWidth,
+      height,
+      wallT,
+      pos.x + (doorW / 2 + frontSegmentWidth / 2),
+      height / 2,
+      frontZ
+    );
+    // Header above the doorway
+    addWall(doorW, height - doorH, wallT, pos.x, doorH + (height - doorH) / 2, frontZ);
+
+    // Roof + accessible lobby floor and low ceiling
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, depth), oMat);
+    roof.position.set(pos.x, height + 0.25, pos.z);
+    roof.castShadow = true;
+    this.scene.add(roof);
+
+    const lobbyFloor = new THREE.Mesh(
+      new THREE.BoxGeometry(width - wallT * 2, 0.06, depth - wallT * 2),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 })
+    );
+    lobbyFloor.position.set(pos.x, 0.03, pos.z);
+    lobbyFloor.receiveShadow = true;
+    this.scene.add(lobbyFloor);
+
+    const lobbyCeiling = new THREE.Mesh(
+      new THREE.BoxGeometry(width - wallT * 2, 0.2, depth - wallT * 2),
+      new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 })
+    );
+    lobbyCeiling.position.set(pos.x, 4.4, pos.z);
+    this.scene.add(lobbyCeiling);
+
+    const lobbyLightA = new THREE.PointLight(0x93c5fd, 2.4, 18);
+    lobbyLightA.position.set(pos.x, 3.9, pos.z + 5);
+    this.scene.add(lobbyLightA);
+    const lobbyLightB = new THREE.PointLight(0x93c5fd, 2.4, 18);
+    lobbyLightB.position.set(pos.x, 3.9, pos.z - 5);
+    this.scene.add(lobbyLightB);
+
     this.buildingRects.push({ x: pos.x, z: pos.z, w: width, d: depth });
 
     // Office Floor Windows (Cyan / Corporate Blue Glow)
@@ -1470,22 +1543,89 @@ export class World {
     const height = 26;
     const depth = 22;
 
-    // Corporate Headquarters Mesh (Emerald obsidian granite)
+    // Corporate Headquarters Shell (Emerald obsidian granite). Hollow ground
+    // floor with an open entrance so the M08 archive and executive terminal
+    // can actually be reached on foot.
     const officeMat = new THREE.MeshStandardMaterial({
       color: 0x064e3b,
       roughness: 0.25,
       metalness: 0.75
     });
-    const officeGeo = new THREE.BoxGeometry(width, height, depth);
-    const officeMesh = new THREE.Mesh(officeGeo, officeMat);
-    officeMesh.position.set(pos.x, height / 2, pos.z - depth / 2);
-    officeMesh.castShadow = true;
-    officeMesh.receiveShadow = true;
-    this.scene.add(officeMesh);
 
-    const bbox = new THREE.Box3().setFromObject(officeMesh);
-    this.colliders.push(bbox);
-    this.buildingRects.push({ x: pos.x, z: pos.z - depth / 2, w: width, d: depth });
+    const centerZ = pos.z - depth / 2;
+    const wallT = 1.2;
+    const doorW = 5.6;
+    const doorH = 3.4;
+    const frontZ = pos.z - wallT / 2;
+
+    const addWall = (
+      w: number,
+      h: number,
+      d: number,
+      x: number,
+      y: number,
+      z: number
+    ): THREE.Mesh => {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), officeMat);
+      wall.position.set(x, y, z);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      this.scene.add(wall);
+      this.colliders.push(new THREE.Box3().setFromObject(wall));
+      return wall;
+    };
+
+    addWall(width, height, wallT, pos.x, height / 2, centerZ - depth / 2 + wallT / 2);
+    addWall(wallT, height, depth, pos.x - width / 2 + wallT / 2, height / 2, centerZ);
+    addWall(wallT, height, depth, pos.x + width / 2 - wallT / 2, height / 2, centerZ);
+
+    const frontSegmentWidth = (width - doorW) / 2;
+    addWall(
+      frontSegmentWidth,
+      height,
+      wallT,
+      pos.x - (doorW / 2 + frontSegmentWidth / 2),
+      height / 2,
+      frontZ
+    );
+    addWall(
+      frontSegmentWidth,
+      height,
+      wallT,
+      pos.x + (doorW / 2 + frontSegmentWidth / 2),
+      height / 2,
+      frontZ
+    );
+    addWall(doorW, height - doorH, wallT, pos.x, doorH + (height - doorH) / 2, frontZ);
+
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, depth), officeMat);
+    roof.position.set(pos.x, height + 0.25, centerZ);
+    roof.castShadow = true;
+    this.scene.add(roof);
+
+    const officeFloor = new THREE.Mesh(
+      new THREE.BoxGeometry(width - wallT * 2, 0.06, depth - wallT * 2),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 })
+    );
+    officeFloor.position.set(pos.x, 0.03, centerZ);
+    officeFloor.receiveShadow = true;
+    this.scene.add(officeFloor);
+
+    const officeCeiling = new THREE.Mesh(
+      new THREE.BoxGeometry(width - wallT * 2, 0.2, depth - wallT * 2),
+      new THREE.MeshStandardMaterial({ color: 0x0b1220, roughness: 0.9 })
+    );
+    officeCeiling.position.set(pos.x, 4.4, centerZ);
+    this.scene.add(officeCeiling);
+
+    const lobbyLightA = new THREE.PointLight(0x6ee7b7, 2.2, 16);
+    lobbyLightA.position.set(pos.x, 3.9, centerZ + 5);
+    this.scene.add(lobbyLightA);
+    const lobbyLightB = new THREE.PointLight(0x6ee7b7, 2.2, 16);
+    lobbyLightB.position.set(pos.x, 3.9, centerZ - 5);
+    this.scene.add(lobbyLightB);
+
+    this.buildingRects.push({ x: pos.x, z: centerZ, w: width, d: depth });
 
     // Architectural floor window strips
     const windowMat = new THREE.MeshStandardMaterial({
@@ -1509,16 +1649,19 @@ export class World {
     canopy.position.set(pos.x, 3.8, pos.z + 1);
     this.scene.add(canopy);
 
-    // Glass Double Entrance Doors
+    // Glass Entrance Doors (held open on either side of the doorway)
     const glassMat = new THREE.MeshStandardMaterial({
       color: 0x10b981,
       emissive: 0x059669,
       emissiveIntensity: 0.5,
       roughness: 0.1
     });
-    const doors = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.0, 0.15), glassMat);
-    doors.position.set(pos.x, 1.5, pos.z + 0.05);
-    this.scene.add(doors);
+    [-1, 1].forEach(side => {
+      const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.0, 0.12), glassMat);
+      doorPanel.position.set(pos.x + side * (doorW / 2 - 0.9), 1.5, pos.z + 0.7);
+      doorPanel.rotation.y = side * 0.9;
+      this.scene.add(doorPanel);
+    });
 
     // Emerald Neon Sign: "VESPERA MUNICIPAL TRUST"
     const signGeo = new THREE.BoxGeometry(14, 1.1, 0.2);

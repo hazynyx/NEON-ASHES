@@ -17,6 +17,8 @@ export class NarrationManager {
   private currentQueue: NarrationItem[] = [];
   private onQueueComplete: (() => void) | null = null;
   private hideTimer: number | null = null;
+  private speechToken: number = 0;
+  private queueToken: number = 0;
 
   constructor(audio: AudioManager, hud: HUD) {
     this.audio = audio;
@@ -80,6 +82,9 @@ export class NarrationManager {
     text: string,
     onEnd?: () => void
   ): void {
+    // Invalidate callbacks from any utterance that was cancelled by this one.
+    const token = ++this.speechToken;
+
     // Always show subtitle on HUD
     this.hud.showNarration(speaker, text);
     if (this.hideTimer) {
@@ -93,6 +98,7 @@ export class NarrationManager {
       // Visual subtitle duration fallback
       const duration = Math.max(3200, text.length * 68);
       this.hideTimer = window.setTimeout(() => {
+        if (token !== this.speechToken) return;
         this.hud.hideNarration();
         if (onEnd) onEnd();
       }, duration);
@@ -128,16 +134,20 @@ export class NarrationManager {
     this.isSpeaking = true;
 
     utterance.onend = () => {
+      if (token !== this.speechToken) return;
       this.isSpeaking = false;
       this.hideTimer = window.setTimeout(() => {
+        if (token !== this.speechToken) return;
         this.hud.hideNarration();
       }, 400);
       if (onEnd) onEnd();
     };
 
     utterance.onerror = () => {
+      if (token !== this.speechToken) return;
       this.isSpeaking = false;
       this.hideTimer = window.setTimeout(() => {
+        if (token !== this.speechToken) return;
         this.hud.hideNarration();
       }, 800);
       if (onEnd) onEnd();
@@ -147,25 +157,29 @@ export class NarrationManager {
   }
 
   public queueNarrations(items: NarrationItem[], onComplete?: () => void): void {
+    const token = ++this.queueToken;
     this.currentQueue = [...items];
     this.onQueueComplete = onComplete || null;
-    this.processQueue();
+    this.processQueue(token);
   }
 
-  private processQueue(): void {
+  private processQueue(token: number): void {
+    if (token !== this.queueToken) return;
     if (this.currentQueue.length === 0) {
       if (this.onQueueComplete) {
-        this.onQueueComplete();
+        const complete = this.onQueueComplete;
         this.onQueueComplete = null;
+        complete();
       }
       return;
     }
 
     const next = this.currentQueue.shift()!;
     this.speak(next.speaker, next.text, () => {
+      if (token !== this.queueToken) return;
       const delay = next.delayAfter || 600;
       setTimeout(() => {
-        this.processQueue();
+        this.processQueue(token);
       }, delay);
     });
   }
@@ -174,6 +188,8 @@ export class NarrationManager {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    this.queueToken++;
+    this.speechToken++;
     this.currentQueue = [];
     this.isSpeaking = false;
     if (this.hideTimer) {

@@ -9,7 +9,7 @@ export function createMission06Data(
   return {
     id: 'M06',
     title: 'BAD BUSINESS',
-    category: 'ACT I // M06',
+    category: 'ACT II // M06',
     rewards: {
       cash: 2000,
       description: '+$2000 • Surveillance Photos • Shell Company Identified • Pistol Ammo Reserve +30'

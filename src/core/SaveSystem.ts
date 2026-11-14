@@ -10,10 +10,15 @@ export interface SaveData {
     x: number;
     y: number;
     z: number;
+    heading?: number;
     health: number;
     cash: number;
     ammoClip: number;
     ammoReserve: number;
+    hasShotgun?: boolean;
+    shotgunClip?: number;
+    shotgunReserve?: number;
+    currentWeapon?: string;
   };
   missions: {
     completed: string[];
@@ -42,9 +47,11 @@ export class SaveSystem {
     slotName: string = 'Autosave'
   ): boolean {
     try {
-      const activeMissionTitle = missionMgr.currentMission ? missionMgr.currentMission.title : 'Free Roam';
+      const activeMission =
+        missionMgr.isMissionActive && missionMgr.currentMission ? missionMgr.currentMission : null;
+      const activeMissionTitle = activeMission ? activeMission.title : 'Free Roam';
       const data: SaveSlotData = {
-        version: 1,
+        version: 2,
         timestamp: Date.now(),
         slotId,
         slotName,
@@ -53,15 +60,22 @@ export class SaveSystem {
           x: Math.round(player.position.x * 10) / 10,
           y: Math.round(player.position.y * 10) / 10,
           z: Math.round(player.position.z * 10) / 10,
+          heading: player.heading,
           health: player.health,
           cash: player.cash,
           ammoClip: player.ammoClip,
-          ammoReserve: player.ammoReserve
+          ammoReserve: player.ammoReserve,
+          hasShotgun: player.hasShotgun,
+          shotgunClip: player.shotgunClip,
+          shotgunReserve: player.shotgunReserve,
+          currentWeapon: player.currentWeapon
         },
         missions: {
           completed: Array.from(missionMgr.completedMissions),
-          currentMissionId: missionMgr.currentMission ? missionMgr.currentMission.id : null,
-          currentObjectiveIndex: missionMgr.currentObjectiveIndex
+          // A completed/failed mission is no longer active and must not be
+          // resurrected as an in-progress mission when this slot is loaded.
+          currentMissionId: activeMission ? activeMission.id : null,
+          currentObjectiveIndex: activeMission ? missionMgr.currentObjectiveIndex : 0
         },
         world: {
           timeOfDay: lighting.timeOfDay
@@ -92,10 +106,42 @@ export class SaveSystem {
 
       player.position.set(data.player.x, data.player.y, data.player.z);
       player.mesh.position.copy(player.position);
-      player.health = data.player.health;
+      player.health = Math.max(1, Math.min(player.maxHealth, data.player.health));
       player.cash = data.player.cash;
       player.ammoClip = data.player.ammoClip;
       player.ammoReserve = data.player.ammoReserve;
+
+      if (data.player.hasShotgun !== undefined) {
+        player.hasShotgun = data.player.hasShotgun;
+      }
+      if (data.player.shotgunClip !== undefined) {
+        player.shotgunClip = data.player.shotgunClip;
+      }
+      if (data.player.shotgunReserve !== undefined) {
+        player.shotgunReserve = data.player.shotgunReserve;
+      }
+      if (
+        data.player.currentWeapon === 'pistol' ||
+        data.player.currentWeapon === 'shotgun' ||
+        data.player.currentWeapon === 'unarmed'
+      ) {
+        player.currentWeapon = data.player.currentWeapon;
+      }
+      if (player.currentWeapon === 'shotgun' && !player.hasShotgun) {
+        player.currentWeapon = 'pistol';
+      }
+      if (typeof data.player.heading === 'number') {
+        player.heading = data.player.heading;
+        player.mesh.rotation.set(0, player.heading, 0);
+      }
+
+      // Loading from the pause menu while dead or seated must always return a
+      // controllable on-foot character.
+      player.isDead = false;
+      player.isInVehicle = false;
+      player.velocity.set(0, 0, 0);
+      player.mesh.visible = true;
+      player.resetCombatState();
 
       if (data.missions && data.missions.completed) {
         missionMgr.completedMissions = new Set(data.missions.completed);

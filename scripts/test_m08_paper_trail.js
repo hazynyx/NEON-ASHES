@@ -113,9 +113,9 @@ async function run() {
   assert(s0State.objIndex === 0, `Objective index is 0 (got ${s0State.objIndex})`);
   assert(s0State.objId === 'meet_mara', `Objective is meet_mara (got ${s0State.objId})`);
 
-  // Teleport player within interaction distance of Southside Diner patio (48, 0, 46)
+  // Teleport player within interaction distance of Southside Diner patio (50, 0, 34.8)
   await page.evaluate(() => {
-    window.game.player.teleport(new window.THREE.Vector3(48, 0, 47), 0);
+    window.game.player.teleport(new window.THREE.Vector3(48, 0, 35), 0);
   });
   await new Promise(r => setTimeout(r, 300));
 

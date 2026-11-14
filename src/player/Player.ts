@@ -42,7 +42,7 @@ export class Player {
   // Weapon & Combat
   public currentWeapon: WeaponType = 'pistol';
   public hasPistol: boolean = true;
-  public hasShotgun: boolean = true;
+  public hasShotgun: boolean = false;
 
   // Pistol ammo
   public ammoClip: number = 12;
@@ -109,7 +109,21 @@ export class Player {
     this.velocity.set(0, 0, 0);
     this.heading = heading;
     this.mesh.position.copy(pos);
-    this.mesh.rotation.y = heading;
+    this.mesh.rotation.set(0, heading, 0);
+    // Clear any ragdoll/aim pose left over from a previous state.
+    this.leftArm.rotation.set(0, 0, 0);
+    this.rightArm.rotation.set(0, 0, 0);
+    this.leftLeg.rotation.set(0, 0, 0);
+    this.rightLeg.rotation.set(0, 0, 0);
+  }
+
+  /** Resets transient combat state (used by respawn and save loading). */
+  public resetCombatState(): void {
+    this.isReloading = false;
+    this.reloadTimer = 0;
+    this.shootCooldown = 0;
+    if (this.muzzleFlashLight) this.muzzleFlashLight.intensity = 0;
+    if (this.shotgunMuzzleFlash) this.shotgunMuzzleFlash.intensity = 0;
   }
 
   private buildCharacterMesh(): void {
@@ -374,12 +388,14 @@ export class Player {
 
       // Rotate character towards movement direction or towards camera if aiming
       if (this.isAiming) {
-        this.heading = camera.yaw;
+        // The player model's forward axis is +Z while the camera looks down -Z
+        // at yaw 0, so the body heading is the view yaw plus PI.
+        this.heading = camera.yaw + Math.PI;
       } else {
         this.heading = Math.atan2(desiredMove.x, desiredMove.z);
       }
     } else if (this.isAiming) {
-      this.heading = camera.yaw;
+      this.heading = camera.yaw + Math.PI;
     }
 
     // Smooth horizontal velocity
@@ -565,7 +581,13 @@ export class Player {
     }
 
     // Shoot (Left Click)
-    if (input.isMouseButtonPressed(0) && this.shootCooldown <= 0 && !this.isReloading && this.currentWeapon !== 'unarmed') {
+    if (
+      input.isPointerLocked &&
+      input.isMouseButtonPressed(0) &&
+      this.shootCooldown <= 0 &&
+      !this.isReloading &&
+      this.currentWeapon !== 'unarmed'
+    ) {
       if (this.currentWeapon === 'pistol') {
         if (this.ammoClip > 0) {
           this.ammoClip--;
@@ -574,7 +596,7 @@ export class Player {
           this.audio.playGunshot();
 
           this.performRaycastShot(camera, scene, 0, 0, 35);
-          this.eventBus.emit('player:weaponFire', { weapon: 'pistol' });
+          this.eventBus.emit('player:weaponFire', { weapon: 'pistol', position: this.position.clone() });
         } else if (this.ammoReserve > 0) {
           this.isReloading = true;
           this.reloadTimer = 1.2;
@@ -593,7 +615,7 @@ export class Player {
             const spreadY = (Math.random() - 0.5) * 0.08;
             this.performRaycastShot(camera, scene, spreadX, spreadY, 25);
           }
-          this.eventBus.emit('player:weaponFire', { weapon: 'shotgun' });
+          this.eventBus.emit('player:weaponFire', { weapon: 'shotgun', position: this.position.clone() });
         } else if (this.shotgunReserve > 0) {
           this.isReloading = true;
           this.reloadTimer = 1.6;
@@ -615,8 +637,19 @@ export class Player {
 
     const intersects = raycaster.intersectObjects(scene.children, true);
     for (const hit of intersects) {
-      // Don't hit player himself
-      if (hit.object.parent === this.mesh || hit.object === this.mesh || hit.object.parent === this.rightArm) {
+      // Ignore every part of Kaleb's own hierarchy (torso, head, arms, held
+      // weapons, muzzle lights). Checking only the direct parent let bullets
+      // hit his own head/weapon meshes and stop before reaching the target.
+      let owner: THREE.Object3D | null = hit.object;
+      let isPlayerPart = false;
+      while (owner) {
+        if (owner === this.mesh) {
+          isPlayerPart = true;
+          break;
+        }
+        owner = owner.parent;
+      }
+      if (isPlayerPart) {
         continue;
       }
 
@@ -657,9 +690,12 @@ export class Player {
     this.health = this.maxHealth;
     this.stamina = this.maxStamina;
     this.isDead = false;
+    this.isInVehicle = false;
+    this.resetCombatState();
     this.velocity.set(0, 0, 0);
     this.isGrounded = true;
     this.heading = heading;
+    this.mesh.visible = true;
     this.mesh.rotation.set(0, heading, 0);
     this.leftArm.rotation.set(0, 0, 0);
     this.rightArm.rotation.set(0, 0, 0);
